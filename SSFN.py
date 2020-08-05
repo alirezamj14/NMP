@@ -8,6 +8,18 @@ import json
 import os
 
 def SSFN(X_train, X_test, T_train, T_test, SSFN_hparameters):
+    """[Implements SSFN]
+
+    Args:
+        X_train ([float]): [The matrix of training data. Each column contains one sample.]
+        X_test ([float]): [The matrix of testing data. Each column contains one sample.]
+        T_train ([float]): [The matrix of training target. Each column contains one sample.]
+        T_test ([float]): [The matrix of testing target. Each column contains one sample.]
+        SSFN_hparameters ([dic]): [The dictionary of hyperparameters of SSFN.]
+
+    Returns:
+        [float]: [Training and testing error in dB.]
+    """
     data = SSFN_hparameters["data"]
     lam = SSFN_hparameters["lam"]
     mu = SSFN_hparameters["mu"]
