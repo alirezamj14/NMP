@@ -7,7 +7,8 @@ import math
 
 def LS(X_train, T_train, lam):
     """[Solve the optimization problem as regularized least-squares]
-
+        Solves the following minimization:
+        O = argmin_{O} ||T - OX||_F + \lambda ||O||_F
     Returns:
         [float]: [The optimized linear mapping.]
     """
