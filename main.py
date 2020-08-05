@@ -30,6 +30,8 @@ def define_dataset(args):
         X_train, X_test, T_train,  T_test  = prepare_Gravitation()
     elif args.data == "MNIST":
         X_train,X_test, T_train,  T_test  = prepare_mnist()
+    elif args.data == "Vowel":
+        X_train,X_test, T_train,  T_test  = prepare_vowel()
     elif args.data == "Planck":
         X_train,X_test, T_train,  T_test  = prepare_Planck()
     elif args.data == "Ohm":
