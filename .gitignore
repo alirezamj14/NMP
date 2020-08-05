@@ -1,1 +1,5 @@
 mat_files/MNIST.mat
+__pycache__/SSFN.cpython-37.pyc
+__pycache__/load_dataset.cpython-37.pyc
+__pycache__/MyOptimizers.cpython-37.pyc
+__pycache__/MyFunctions.cpython-37.pyc
