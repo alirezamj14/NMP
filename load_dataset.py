@@ -3,6 +3,22 @@
 import numpy as np
 from scipy.io import loadmat
 
+def prepare_NN():
+    # Ohm's law: https://en.wikipedia.org/wiki/Ohm%27s_law
+
+    N=10000         # Number of samples  
+    Ntr=9000       # Number of training samples 
+    fExtra=8          # Number of extra random features
+    V = 10*np.random.rand(1, N)+10       # voltage
+    R = 10*np.random.rand(1, N)+10       # resistance
+    I = V/R    # current
+    
+    X_train = np.concatenate((V[:,:Ntr], R[:,:Ntr], (10)*np.random.rand(fExtra,Ntr)+10), axis=0)
+    T_train=I[:,:Ntr]
+    X_test = np.concatenate((V[:,Ntr:], R[:,Ntr:], (10)*np.random.rand(fExtra,N-Ntr)+10), axis=0)
+    T_test=I[:,Ntr:]
+    return X_train, X_test, T_train, T_test
+
 
 def prepare_Ohm():
     # Ohm's law: https://en.wikipedia.org/wiki/Ohm%27s_law
