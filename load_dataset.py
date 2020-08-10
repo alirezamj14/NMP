@@ -1,22 +1,24 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from MyFunctions import relu
 from scipy.io import loadmat
 
 def prepare_NN():
     # Ohm's law: https://en.wikipedia.org/wiki/Ohm%27s_law
 
-    N=10000         # Number of samples  
-    Ntr=9000       # Number of training samples 
-    fExtra=8          # Number of extra random features
-    V = 10*np.random.rand(1, N)+10       # voltage
-    R = 10*np.random.rand(1, N)+10       # resistance
-    I = V/R    # current
+    N = 10000         # Number of samples  
+    Ntr = 9000       # Number of training samples 
+    P = 50          # Number of input features
+    n1 = 100        # Number of hidden neurons in the first layer
+    n2 = 10         # Number of hidden neurons in the second layer
+    X_train = 10*np.random.rand(P, Ntr)+10       # voltage
+    X_test = 10*np.random.rand(P, N-Ntr)+10       # resistance
+    W1 = np.random.randn(n1, P)
+    W2 = np.random.randn(n2, n1)
     
-    X_train = np.concatenate((V[:,:Ntr], R[:,:Ntr], (10)*np.random.rand(fExtra,Ntr)+10), axis=0)
-    T_train=I[:,:Ntr]
-    X_test = np.concatenate((V[:,Ntr:], R[:,Ntr:], (10)*np.random.rand(fExtra,N-Ntr)+10), axis=0)
-    T_test=I[:,Ntr:]
+    T_train = W2 * relu(W1 * X_train)
+    T_test = W2 * relu(W1 * X_test)
     return X_train, X_test, T_train, T_test
 
 

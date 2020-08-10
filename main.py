@@ -36,6 +36,8 @@ def define_dataset(args):
         X_train,X_test, T_train,  T_test  = prepare_Planck()
     elif args.data == "Ohm":
         X_train,X_test, T_train,  T_test  = prepare_Ohm()
+    elif args.data == "NN":
+        X_train,X_test, T_train,  T_test  = prepare_NN()
     return X_train, X_test, T_train, T_test
 
 def set_hparameters(args):
@@ -115,6 +117,7 @@ def Err_vs_feat(args):
 
     parameters_path = "./parameters/"
     result_path = "./results/"
+    LA = "None"
 
     SSFN_hparameters = set_hparameters(args)
     data = SSFN_hparameters["data"]
@@ -141,10 +144,14 @@ def Err_vs_feat(args):
             train_error_array = np.append(train_error_array, train_error)
             test_error_array = np.append(test_error_array, test_error)
 
-        if len(test_error_array)>1:
-            i = LookAhead(test_error_array, sorted_ind, search_ind, X_train, X_test, T_train, T_test, SSFN_hparameters)
+        if LA == "LookAhead":
+            if len(test_error_array)>1:
+                i = LookAhead(test_error_array, sorted_ind, search_ind, X_train, X_test, T_train, T_test, SSFN_hparameters)
+            else:
+                i = np.argmin(test_error_array)
         else:
             i = np.argmin(test_error_array)
+
         best_ind = search_ind[i]
         train_error_sorted = np.append(train_error_sorted, train_error_array[i])
         test_error_sorted = np.append(test_error_sorted, test_error_array[i])
