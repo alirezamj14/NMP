@@ -185,7 +185,7 @@ def Err_vs_feat(args):
 
 def MonteCarlo_NMP(J,Pextra,LA,args):
     """[This function is used for parallel processing when doing Monte Carlo trials. 
-    It counts the number of corrent index detection across several trials and returns the detection accuracy of NMP for a fixed J and Pextra.]
+    It counts the number of correct index detection across several trials and returns the detection accuracy of NMP for a fixed J and Pextra.]
 
     Args:
         J ([int]): [Sample size: total number of training and testing samples.]
@@ -288,6 +288,10 @@ def acc_vs_J(_logger,args):
     _logger.info("The dataset we use is {}".format(args.data))
     accuracy_Gravitation = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,0,LA,args) for J in SampleSize)
 
+    args.data = "NN"
+    _logger.info("The dataset we use is {}".format(args.data))
+    accuracy_NN = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,0,LA,args) for J in SampleSize)
+
     LA = "LookAhead"
 
     # args.data = "Ohm"
@@ -298,22 +302,22 @@ def acc_vs_J(_logger,args):
     # _logger.info("The dataset we use is {}".format(args.data))
     # accuracy_Planck_LA = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,0,LA,_logger,args) for J in SampleSize)
     
-    args.data = "Gravitation"
-    _logger.info("The dataset we use is {}".format(args.data))
-    accuracy_Gravitation_LA = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,0,LA,args) for J in SampleSize)
+    # args.data = "Gravitation"
+    # _logger.info("The dataset we use is {}".format(args.data))
+    # accuracy_Gravitation_LA = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,0,LA,args) for J in SampleSize)
     
     csfont = {'fontname':'sans-serif'}
     plt.subplots()
     # plt.plot(SampleSize, accuracy_Ohm, 'r-', label="Ohm's law")
     # plt.plot(SampleSize, accuracy_Planck, 'b-', label="Planck's law")
-    plt.plot(SampleSize, accuracy_Gravitation, 'g-', label="Gravitation law")
-    plt.plot(SampleSize, accuracy_Gravitation_LA, 'g:', label="Gravitation law LookAhead")
+    plt.plot(SampleSize, accuracy_NN, 'g-', label="NN model")
+    # plt.plot(SampleSize, accuracy_Gravitation_LA, 'g:', label="Gravitation law LookAhead")
     plt.legend(loc='best')
     plt.grid()
     plt.xlabel("Sample Size (J)",fontdict=csfont)
     plt.ylabel("Detection Accuracy (%)",fontdict=csfont)
     plt.title("SSFN", loc='center')
-    plt.savefig(result_path +"LA_Acc_vs_J.png")
+    plt.savefig(result_path +"LA_Acc_vs_J_"+arg.data+".png")
     plt.close()
 
 def acc_vs_P(_logger,args):
@@ -363,8 +367,8 @@ def main():
     SSFN_hparameters = set_hparameters(args)
     
     _logger.info("Construct SSFN")
-    Err_vs_feat(args)
-    # acc_vs_J(_logger,args)
+    # Err_vs_feat(args)
+    acc_vs_J(_logger,args)
     # acc_vs_P(_logger,args)
 
 if __name__ == '__main__':
