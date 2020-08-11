@@ -212,7 +212,7 @@ def MonteCarlo_NMP(J,Pextra,LA,args):
     miss_count = 0 
 
     for iteration in np.arange(1,MC_Num+1):
-        print("J = "+str(J)+", Itration "+str(iteration))
+        # print("J = "+str(J)+", Itration "+str(iteration))
         X_train, X_test, T_train, T_test = define_dataset(args)
         X_train = X_train[:,:int(round(0.9*J))] 
         T_train = T_train[:,:int(round(0.9*J))]
