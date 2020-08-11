@@ -206,11 +206,13 @@ def MonteCarlo_NMP(J,Pextra,LA,args):
         true_ind = [0,1]
     elif data == "Ohm":
         true_ind = [0,1]
+    elif data == "NN":
+        true_ind = np.arange(0,50)
 
     miss_count = 0 
 
     for iteration in np.arange(1,MC_Num+1):
-        # print("P = "+str(Pextra)+", Itration "+str(iteration))
+        print("J = "+str(J)+", Itration "+str(iteration))
         X_train, X_test, T_train, T_test = define_dataset(args)
         X_train = X_train[:,:int(round(0.9*J))] 
         T_train = T_train[:,:int(round(0.9*J))]
@@ -284,9 +286,9 @@ def acc_vs_J(_logger,args):
     # _logger.info("The dataset we use is {}".format(args.data))
     # accuracy_Planck = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,0,LA,_logger,args) for J in SampleSize)
     
-    args.data = "Gravitation"
-    _logger.info("The dataset we use is {}".format(args.data))
-    accuracy_Gravitation = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,0,LA,args) for J in SampleSize)
+    # args.data = "Gravitation"
+    # _logger.info("The dataset we use is {}".format(args.data))
+    # accuracy_Gravitation = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,0,LA,args) for J in SampleSize)
 
     args.data = "NN"
     _logger.info("The dataset we use is {}".format(args.data))
@@ -317,7 +319,7 @@ def acc_vs_J(_logger,args):
     plt.xlabel("Sample Size (J)",fontdict=csfont)
     plt.ylabel("Detection Accuracy (%)",fontdict=csfont)
     plt.title("SSFN", loc='center')
-    plt.savefig(result_path +"LA_Acc_vs_J_"+arg.data+".png")
+    plt.savefig(result_path +"LA_Acc_vs_J_"+args.data+".png")
     plt.close()
 
 def acc_vs_P(_logger,args):
