@@ -16,9 +16,9 @@ def prepare_NN():
     X_test = 10*np.random.rand(P, N-Ntr)+10       # resistance
     W1 = np.random.randn(n1, P)
     W2 = np.random.randn(n2, n1)
-    
-    T_train = W2 * relu(W1 * X_train)
-    T_test = W2 * relu(W1 * X_test)
+
+    T_train = np.dot(W2 , relu(np.dot(W1, X_train)))
+    T_test = np.dot(W2 , relu(np.dot(W1, X_test)))
     return X_train, X_test, T_train, T_test
 
 
@@ -27,7 +27,7 @@ def prepare_Ohm():
 
     N=10000         # Number of samples  
     Ntr=9000       # Number of training samples 
-    fExtra=8          # Number of extra random features
+    fExtra=0          # Number of extra random features
     V = 10*np.random.rand(1, N)+10       # voltage
     R = 10*np.random.rand(1, N)+10       # resistance
     I = V/R    # current
@@ -44,7 +44,7 @@ def prepare_Planck():
 
     N=10000         # Number of samples  
     Ntr=9000       # Number of training samples
-    fExtra=8           # Number of extra random features
+    fExtra=0           # Number of extra random features
     v = 10*np.random.rand(1, N)+10       # frequency
     T = 10*np.random.rand(1, N)+10       # absolute temperature
     B = 2 * (v**3) * (1/(np.exp(v/T)-1))    # spectral radiance of a body
@@ -58,7 +58,7 @@ def prepare_Planck():
 def prepare_Gravitation():
     N=10000         # Number of samples  
     Ntr=9000       # Number of training samples  
-    fExtra=7           # Number of extra random features
+    fExtra=0           # Number of extra random features
     m1=10*np.random.rand(1, N)+10
     m2=10*np.random.rand(1, N)+10
     r=10*np.random.rand(1, N)+10

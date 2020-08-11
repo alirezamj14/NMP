@@ -10,12 +10,14 @@ from joblib import Parallel, delayed
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run progressive learning")
-    parser.add_argument("--data", default="Ohm", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="NN", help="Input dataset available as the paper shows")
     parser.add_argument("--lam", type=float, default=10**(2), help="Reguralized parameters on the least-square problem")
     parser.add_argument("--mu", type=float, default=10**(3), help="Parameter for ADMM")
     parser.add_argument("--kMax", type=int, default=100, help="Iteration number of ADMM")
     parser.add_argument("--NodeNum", type=int, default=100, help="Max number of random nodes on each layer")
     parser.add_argument("--LayerNum", type=int, default=5, help="Parameter for ADMM")
+    parser.add_argument("--J", type=int, default=1000, help="Sample Size")
+    parser.add_argument("--Pextra", type=int, default=50, help="Number of extra random features")
     args = parser.parse_args()
     return args
 
@@ -42,7 +44,8 @@ def define_dataset(args):
 
 def set_hparameters(args):
     SSFN_hparameters = {"data": args.data, "lam": args.lam, "mu": args.mu, \
-            "kMax": args.kMax, "NodeNum": args.NodeNum, "LayerNum": args.LayerNum}
+            "kMax": args.kMax, "NodeNum": args.NodeNum, "LayerNum": args.LayerNum\
+                , "J": args.J, "Pextra": args.Pextra}
     return SSFN_hparameters
 
 def LookAhead(test_error_array, sorted_ind, search_ind, X_train, X_test, T_train, T_test, SSFN_hparameters):
@@ -108,18 +111,26 @@ def Err_vs_feat(args):
     Args:
         args ([parser]): [It contains the inputs specifies by the user such as name of the dataset, and hyperparameters of the NN.]
     """
-    J = 1000
+    SSFN_hparameters = set_hparameters(args)
+
+    J = SSFN_hparameters["J"]
+    Pextra = SSFN_hparameters["Pextra"]
+
     X_train, X_test, T_train, T_test = define_dataset(args)
     X_train = X_train[:,:int(round(0.9*J))] 
     T_train = T_train[:,:int(round(0.9*J))]
     X_test = X_test[:,:int(round(0.1*J))] 
     T_test = T_test[:,:int(round(0.1*J))]
 
+    Ntr = X_train.shape[1]
+    Nts = X_test.shape[1]
+    X_train = np.concatenate((X_train, (10)*np.random.rand(Pextra,Ntr)+10), axis=0)
+    X_test = np.concatenate(( X_test, (10)*np.random.rand(Pextra,Nts)+10), axis=0)
+        
     parameters_path = "./parameters/"
     result_path = "./results/"
     LA = "None"
 
-    SSFN_hparameters = set_hparameters(args)
     data = SSFN_hparameters["data"]
     LayerNum = SSFN_hparameters["LayerNum"]
     NodeNum = SSFN_hparameters["NodeNum"]
