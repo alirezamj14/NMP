@@ -258,7 +258,7 @@ def MonteCarlo_NMP(J,Pextra,LA,args):
                 diff_ind = np.setdiff1d(true_ind, sorted_ind)
                 if len(diff_ind) > 0:
                     miss_count = miss_count + 1
-                    print(sorted_ind)
+                    # print(sorted_ind)
                     print("For J = "+str(J)+" , Pextra = "+str(Pextra)+" -> Miss count = "+str(miss_count))
                 break
     
@@ -290,9 +290,10 @@ def acc_vs_J(_logger,args):
     # _logger.info("The dataset we use is {}".format(args.data))
     # accuracy_Gravitation = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,0,LA,args) for J in SampleSize)
 
-    args.data = "NN"
-    _logger.info("The dataset we use is {}".format(args.data))
-    accuracy_NN = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,0,LA,args) for J in SampleSize)
+    # Pextra = 50
+    # args.data = "NN"
+    # _logger.info("The dataset we use is {}".format(args.data))
+    # accuracy_NN = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
 
     LA = "LookAhead"
 
@@ -307,12 +308,17 @@ def acc_vs_J(_logger,args):
     # args.data = "Gravitation"
     # _logger.info("The dataset we use is {}".format(args.data))
     # accuracy_Gravitation_LA = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,0,LA,args) for J in SampleSize)
+
+    Pextra = 50
+    args.data = "NN"
+    _logger.info("The dataset we use is {}".format(args.data))
+    accuracy_NN_LA = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
     
     csfont = {'fontname':'sans-serif'}
     plt.subplots()
     # plt.plot(SampleSize, accuracy_Ohm, 'r-', label="Ohm's law")
     # plt.plot(SampleSize, accuracy_Planck, 'b-', label="Planck's law")
-    plt.plot(SampleSize, accuracy_NN, 'g-', label="NN model")
+    plt.plot(SampleSize, accuracy_NN_LA, 'g:', label="NN model LookAhead")
     # plt.plot(SampleSize, accuracy_Gravitation_LA, 'g:', label="Gravitation law LookAhead")
     plt.legend(loc='best')
     plt.grid()
