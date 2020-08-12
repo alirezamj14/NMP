@@ -259,7 +259,7 @@ def MonteCarlo_NMP(J,Pextra,LA,args):
                 if len(diff_ind) > 0:
                     miss_count = miss_count + 1
                     # print(sorted_ind)
-                    print("For J = "+str(J)+" , Pextra = "+str(Pextra)+" -> Miss count = "+str(miss_count))
+                    print("For J = "+str(J)+" , Pextra = "+str(Pextra)+" -> Miss count = "+str(miss_count)+" / "+str(iteration))
                 break
     
     accuracy = (1 - miss_count/MC_Num) * 100
