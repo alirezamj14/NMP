@@ -9,6 +9,69 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import json
 import pickle
+from PIL import Image
+import matplotlib.gridspec as gridspec
+
+def show_image(x1,x2,x3,sorted_ind, save_name):
+    result_path = "./results/"
+    image = {}
+    percentage = [0.2,0.4,0.6,0.8,1] # [0.2,0.4,0.6,0.8,1] # [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+    fig = plt.figure()
+    gs1 = gridspec.GridSpec(3, len(percentage))
+    gs1.update(wspace=0.025, hspace=0.05) # set the spacing between axes.
+
+    i = 0
+    y = np.zeros(x1.shape)
+    for p in percentage:
+        temp = int(round(p*x1.shape[0]))
+        index = sorted_ind[0:temp]
+        y[index] = x1[index]
+        sample = np.reshape(y, (28,28))
+        sample = np.transpose(sample)
+        image = Image.fromarray(sample * 255)
+        ax = plt.subplot(gs1[i])
+        ax.set_aspect('equal')
+        # ax = fig.add_subplot(3, len(percentage), i)
+        imgplot = plt.imshow(image)
+        ax.set_title(str(int(p * 100))+"%")
+        plt.axis('off')
+        i = i + 1
+
+    y = np.zeros(x2.shape)
+    for p in percentage:
+        temp = int(round(p*x2.shape[0]))
+        index = sorted_ind[0:temp]
+        y[index] = x2[index]
+        sample = np.reshape(y, (28,28))
+        sample = np.transpose(sample)
+        image = Image.fromarray(sample * 255)
+        ax = plt.subplot(gs1[i])
+        ax.set_aspect('equal')
+        # ax = fig.add_subplot(3, len(percentage), i)
+        imgplot = plt.imshow(image)
+        # ax.set_title(str(int(p * 100))+"%")
+        plt.axis('off')
+        i = i + 1
+
+    y = np.zeros(x3.shape)
+    for p in percentage:
+        temp = int(round(p*x3.shape[0]))
+        index = sorted_ind[0:temp]
+        y[index] = x3[index]
+        sample = np.reshape(y, (28,28))
+        sample = np.transpose(sample)
+        image = Image.fromarray(sample * 255)
+        ax = plt.subplot(gs1[i])
+        ax.set_aspect('equal')
+        # ax = fig.add_subplot(3, len(percentage), i)
+        imgplot = plt.imshow(image)
+        # ax.set_title(str(int(p * 100))+"%")
+        plt.axis('off')
+        i = i + 1
+
+    plt.savefig(result_path +"Sample_image_MNIST_"+save_name+".png")
+    plt.close()
+
 
 def save_list(my_list, parameters_path, data):
     with open(parameters_path + data+"_"+'n_lists.json','w') as f: 

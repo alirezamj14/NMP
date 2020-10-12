@@ -89,4 +89,4 @@ def SSFN(X_train, X_test, T_train, T_test, SSFN_hparameters):
         Yi_test=Yi_test_temp
         Pi=Yi.shape[0]
 
-    return compute_nme(T_train,t_hat), compute_nme(T_test,t_hat_test)
+    return compute_nme(T_train,t_hat), compute_nme(T_test,t_hat_test), calculate_accuracy(T_train,t_hat), calculate_accuracy(T_test,t_hat_test)

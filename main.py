@@ -10,14 +10,14 @@ from joblib import Parallel, delayed
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run progressive learning")
-    parser.add_argument("--data", default="NN", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
     parser.add_argument("--lam", type=float, default=10**(2), help="Reguralized parameters on the least-square problem")
     parser.add_argument("--mu", type=float, default=10**(3), help="Parameter for ADMM")
     parser.add_argument("--kMax", type=int, default=100, help="Iteration number of ADMM")
     parser.add_argument("--NodeNum", type=int, default=100, help="Max number of random nodes on each layer")
-    parser.add_argument("--LayerNum", type=int, default=5, help="Parameter for ADMM")
+    parser.add_argument("--LayerNum", type=int, default=1, help="Parameter for ADMM")
     parser.add_argument("--J", type=int, default=1000, help="Sample Size")
-    parser.add_argument("--Pextra", type=int, default=50, help="Number of extra random features")
+    parser.add_argument("--Pextra", type=int, default=0, help="Number of extra random features")
     args = parser.parse_args()
     return args
 
@@ -31,15 +31,15 @@ def define_dataset(args):
     if args.data == "Gravitation":
         X_train, X_test, T_train,  T_test  = prepare_Gravitation()
     elif args.data == "MNIST":
-        X_train,X_test, T_train,  T_test  = prepare_mnist()
+        X_train, X_test, T_train,  T_test  = prepare_mnist()
     elif args.data == "Vowel":
-        X_train,X_test, T_train,  T_test  = prepare_vowel()
+        X_train, X_test, T_train,  T_test  = prepare_vowel()
     elif args.data == "Planck":
-        X_train,X_test, T_train,  T_test  = prepare_Planck()
+        X_train, X_test, T_train,  T_test  = prepare_Planck()
     elif args.data == "Ohm":
-        X_train,X_test, T_train,  T_test  = prepare_Ohm()
+        X_train, X_test, T_train,  T_test  = prepare_Ohm()
     elif args.data == "NN":
-        X_train,X_test, T_train,  T_test  = prepare_NN()
+        X_train, X_test, T_train,  T_test  = prepare_NN()
     return X_train, X_test, T_train, T_test
 
 def set_hparameters(args):
@@ -124,8 +124,11 @@ def Err_vs_feat(args):
 
     Ntr = X_train.shape[1]
     Nts = X_test.shape[1]
-    X_train = np.concatenate((X_train, (10)*np.random.rand(Pextra,Ntr)+10), axis=0)
-    X_test = np.concatenate(( X_test, (10)*np.random.rand(Pextra,Nts)+10), axis=0)
+    # X_train = np.concatenate((X_train, (10)*np.random.rand(Pextra,Ntr)+10), axis=0)
+    # X_test = np.concatenate(( X_test, (10)*np.random.rand(Pextra,Nts)+10), axis=0)
+
+    X_train = 1 - X_train
+    X_test = 1 - X_test
         
     parameters_path = "./parameters/"
     result_path = "./results/"
@@ -135,15 +138,21 @@ def Err_vs_feat(args):
     LayerNum = SSFN_hparameters["LayerNum"]
     NodeNum = SSFN_hparameters["NodeNum"]
     
+    # train_error, test_error = SSFN( X_train, X_test, T_train, T_test, SSFN_hparameters)
+
     P=X_train.shape[0]
     search_ind = range(P)
     train_error_sorted = np.array([])
     test_error_sorted = np.array([])
+    train_acc_sorted = np.array([])
+    test_acc_sorted = np.array([])
     sorted_ind = np.array([],  dtype=int)
 
     while len(search_ind) > 0:
         train_error_array = np.array([])
         test_error_array = np.array([])
+        train_acc_array = np.array([])
+        test_acc_array = np.array([])
         for i in search_ind:
             if len(sorted_ind)>=1:
                 X_tr = X_train[np.append(sorted_ind,i),:]
@@ -151,9 +160,11 @@ def Err_vs_feat(args):
             else:
                 X_tr = X_train[[i],:]
                 X_ts = X_test[[i],:]
-            train_error, test_error = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+            train_error, test_error, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
             train_error_array = np.append(train_error_array, train_error)
             test_error_array = np.append(test_error_array, test_error)
+            train_acc_array = np.append(train_acc_array, train_acc)
+            test_acc_array = np.append(test_acc_array, test_acc)
 
         if LA == "LookAhead":
             if len(test_error_array)>1:
@@ -166,10 +177,15 @@ def Err_vs_feat(args):
         best_ind = search_ind[i]
         train_error_sorted = np.append(train_error_sorted, train_error_array[i])
         test_error_sorted = np.append(test_error_sorted, test_error_array[i])
+        train_acc_sorted = np.append(train_acc_sorted, train_acc_array[i])
+        test_acc_sorted = np.append(test_acc_sorted, test_acc_array[i])
         sorted_ind = np.append(sorted_ind, best_ind)
         search_ind = np.delete(search_ind, i)
-        print(sorted_ind)
+        print(best_ind)
 
+    output_dic = {}
+    output_dic["sorted_ind"]=sorted_ind 
+    save_dic(output_dic, parameters_path, data, "sorted_ind")
 
     csfont = {'fontname':'sans-serif'}
     plt.subplots()
@@ -180,7 +196,19 @@ def Err_vs_feat(args):
     plt.xlabel("Number of input features",fontdict=csfont)
     plt.ylabel("Normalized Loss (dB)",fontdict=csfont)
     plt.title(data+", SSFN", loc='center')
-    plt.savefig(result_path +"LA_Err_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png")
+    plt.savefig(result_path +"Err_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png")
+    plt.close()
+
+    csfont = {'fontname':'sans-serif'}
+    plt.subplots()
+    plt.plot(np.arange(1,P+1), test_acc_sorted, 'r-', label="Test Accuracy")
+    plt.plot(np.arange(1,P+1), train_acc_sorted, 'b-', label="Train Accuracy")
+    plt.legend(loc='best')
+    plt.grid()
+    plt.xlabel("Number of input features",fontdict=csfont)
+    plt.ylabel("Classification accuracy",fontdict=csfont)
+    plt.title(data+", SSFN", loc='center')
+    plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png")
     plt.close()
 
 def MonteCarlo_NMP(J,Pextra,LA,args):
@@ -366,6 +394,38 @@ def acc_vs_P(_logger,args):
     plt.savefig(result_path +"Acc_vs_P.png")
     plt.close()
 
+def plot_MNIST(_logger,args):
+    SSFN_hparameters = set_hparameters(args)
+
+    J = SSFN_hparameters["J"]
+    Pextra = SSFN_hparameters["Pextra"]
+
+    X_train, X_test, T_train, T_test = define_dataset(args)
+    X_train = X_train[:,:int(round(0.9*J))] 
+    T_train = T_train[:,:int(round(0.9*J))]
+    X_test = X_test[:,:int(round(0.1*J))] 
+    T_test = T_test[:,:int(round(0.1*J))]
+
+    Ntr = X_train.shape[1]
+    Nts = X_test.shape[1]
+        
+    parameters_path = "./parameters/"
+    result_path = "./results/"
+    LA = "None"
+
+    data = SSFN_hparameters["data"]
+    LayerNum = SSFN_hparameters["LayerNum"]
+    NodeNum = SSFN_hparameters["NodeNum"]
+    
+    save_name = "sorted"
+    my_dic = load_dic( parameters_path, data, "sorted_ind")
+    show_image(X_train[:,1],X_train[:,20],X_train[:,30],my_dic["sorted_ind"], save_name)
+
+    save_name = "random"
+    random_ind = np.arange(0,784)
+    np.random.shuffle(random_ind)
+    show_image(X_train[:,1],X_train[:,20],X_train[:,30], random_ind, save_name)
+
 def main():
     args = define_parser()
     _logger = define_logger()
@@ -375,9 +435,10 @@ def main():
     SSFN_hparameters = set_hparameters(args)
     
     _logger.info("Construct SSFN")
-    # Err_vs_feat(args)
-    acc_vs_J(_logger,args)
+    Err_vs_feat(args)
+    # acc_vs_J(_logger,args)
     # acc_vs_P(_logger,args)
+    # plot_MNIST(_logger,args)
 
 if __name__ == '__main__':
     main()
