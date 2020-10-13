@@ -10,14 +10,14 @@ from joblib import Parallel, delayed
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run progressive learning")
-    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="Ohm", help="Input dataset available as the paper shows")
     parser.add_argument("--lam", type=float, default=10**(2), help="Reguralized parameters on the least-square problem")
     parser.add_argument("--mu", type=float, default=10**(3), help="Parameter for ADMM")
     parser.add_argument("--kMax", type=int, default=100, help="Iteration number of ADMM")
     parser.add_argument("--NodeNum", type=int, default=100, help="Max number of random nodes on each layer")
-    parser.add_argument("--LayerNum", type=int, default=1, help="Parameter for ADMM")
+    parser.add_argument("--LayerNum", type=int, default=5, help="Parameter for ADMM")
     parser.add_argument("--J", type=int, default=1000, help="Sample Size")
-    parser.add_argument("--Pextra", type=int, default=0, help="Number of extra random features")
+    parser.add_argument("--Pextra", type=int, default=8, help="Number of extra random features")
     args = parser.parse_args()
     return args
 
@@ -115,6 +115,9 @@ def Err_vs_feat(args):
 
     J = SSFN_hparameters["J"]
     Pextra = SSFN_hparameters["Pextra"]
+    data = SSFN_hparameters["data"]
+    LayerNum = SSFN_hparameters["LayerNum"]
+    NodeNum = SSFN_hparameters["NodeNum"]
 
     X_train, X_test, T_train, T_test = define_dataset(args)
     X_train = X_train[:,:int(round(0.9*J))] 
@@ -124,20 +127,19 @@ def Err_vs_feat(args):
 
     Ntr = X_train.shape[1]
     Nts = X_test.shape[1]
-    # X_train = np.concatenate((X_train, (10)*np.random.rand(Pextra,Ntr)+10), axis=0)
-    # X_test = np.concatenate(( X_test, (10)*np.random.rand(Pextra,Nts)+10), axis=0)
 
-    X_train = 1 - X_train
-    X_test = 1 - X_test
+    if data!="MNIST":
+        X_train = np.concatenate((X_train, (10)*np.random.rand(Pextra,Ntr)+10), axis=0)
+        X_test = np.concatenate(( X_test, (10)*np.random.rand(Pextra,Nts)+10), axis=0)
+
+    if data=="MNIST":
+        X_train = 1 - X_train
+        X_test = 1 - X_test
         
     parameters_path = "./parameters/"
     result_path = "./results/"
     LA = "None"
 
-    data = SSFN_hparameters["data"]
-    LayerNum = SSFN_hparameters["LayerNum"]
-    NodeNum = SSFN_hparameters["NodeNum"]
-    
     # train_error, test_error = SSFN( X_train, X_test, T_train, T_test, SSFN_hparameters)
 
     P=X_train.shape[0]
@@ -187,29 +189,33 @@ def Err_vs_feat(args):
     output_dic["sorted_ind"]=sorted_ind 
     save_dic(output_dic, parameters_path, data, "sorted_ind")
 
+    FontSize = 11
     csfont = {'fontname':'sans-serif'}
     plt.subplots()
     plt.plot(np.arange(1,P+1), test_error_sorted, 'r-', label="Test NME")
     plt.plot(np.arange(1,P+1), train_error_sorted, 'b-', label="Train NME")
-    plt.legend(loc='best')
+    plt.legend(loc='best', fontsize=FontSize)
     plt.grid()
-    plt.xlabel("Number of input features",fontdict=csfont)
-    plt.ylabel("Normalized Loss (dB)",fontdict=csfont)
-    plt.title(data+", SSFN", loc='center')
+    plt.xlabel("Number of input features",fontdict=csfont, fontsize=FontSize)
+    plt.ylabel("Normalized Loss (dB)",fontdict=csfont, fontsize=FontSize)
+    plt.title(data+", SSFN", loc='center', fontsize=FontSize)
+    plt.xticks(fontsize=FontSize+2)
+    plt.yticks(fontsize=FontSize+2)
     plt.savefig(result_path +"Err_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png")
     plt.close()
 
-    csfont = {'fontname':'sans-serif'}
-    plt.subplots()
-    plt.plot(np.arange(1,P+1), test_acc_sorted, 'r-', label="Test Accuracy")
-    plt.plot(np.arange(1,P+1), train_acc_sorted, 'b-', label="Train Accuracy")
-    plt.legend(loc='best')
-    plt.grid()
-    plt.xlabel("Number of input features",fontdict=csfont)
-    plt.ylabel("Classification accuracy",fontdict=csfont)
-    plt.title(data+", SSFN", loc='center')
-    plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png")
-    plt.close()
+    if data=="MNIST":
+        csfont = {'fontname':'sans-serif'}
+        plt.subplots()
+        plt.plot(np.arange(1,P+1), test_acc_sorted, 'r-', label="Test Accuracy")
+        plt.plot(np.arange(1,P+1), train_acc_sorted, 'b-', label="Train Accuracy")
+        plt.legend(loc='best')
+        plt.grid()
+        plt.xlabel("Number of input features",fontdict=csfont)
+        plt.ylabel("Classification accuracy",fontdict=csfont)
+        plt.title(data+", SSFN", loc='center')
+        plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png")
+        plt.close()
 
 def MonteCarlo_NMP(J,Pextra,LA,args):
     """[This function is used for parallel processing when doing Monte Carlo trials. 
