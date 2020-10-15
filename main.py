@@ -10,14 +10,14 @@ from joblib import Parallel, delayed
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run progressive learning")
-    parser.add_argument("--data", default="Ohm", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
     parser.add_argument("--lam", type=float, default=10**(2), help="Reguralized parameters on the least-square problem")
     parser.add_argument("--mu", type=float, default=10**(3), help="Parameter for ADMM")
     parser.add_argument("--kMax", type=int, default=100, help="Iteration number of ADMM")
     parser.add_argument("--NodeNum", type=int, default=100, help="Max number of random nodes on each layer")
-    parser.add_argument("--LayerNum", type=int, default=5, help="Parameter for ADMM")
+    parser.add_argument("--LayerNum", type=int, default=1, help="Parameter for ADMM")
     parser.add_argument("--J", type=int, default=1000, help="Sample Size")
-    parser.add_argument("--Pextra", type=int, default=8, help="Number of extra random features")
+    parser.add_argument("--Pextra", type=int, default=0, help="Number of extra random features")
     args = parser.parse_args()
     return args
 
@@ -78,14 +78,13 @@ def LookAhead(test_error_array, sorted_ind, search_ind, X_train, X_test, T_train
         else:
             X_tr = X_train[[i],:]
             X_ts = X_test[[i],:]
-        _, test_error = SSFN(X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+        _, test_error, _, _ = SSFN(X_tr, X_ts, T_train, T_test, SSFN_hparameters)
         test_error_temp = np.append(test_error_temp, test_error)
     myMin0 = np.min(test_error_temp)  
 
     sorted_ind1 = np.append(sorted_ind, search_ind[ind_array[1]])
     search_ind1 = np.delete(search_ind, ind_array[1])
 
-    train_error_array = np.array([])
     test_error_temp = np.array([])
     for i in search_ind1:
         if len(sorted_ind1)>=1:
@@ -94,7 +93,7 @@ def LookAhead(test_error_array, sorted_ind, search_ind, X_train, X_test, T_train
         else:
             X_tr = X_train[[i],:]
             X_ts = X_test[[i],:]
-        _, test_error = SSFN(X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+        _, test_error, _, _ = SSFN(X_tr, X_ts, T_train, T_test, SSFN_hparameters)
         test_error_temp = np.append(test_error_temp, test_error)
     myMin1 = np.min(test_error_temp)  
 
@@ -183,38 +182,46 @@ def Err_vs_feat(args):
         test_acc_sorted = np.append(test_acc_sorted, test_acc_array[i])
         sorted_ind = np.append(sorted_ind, best_ind)
         search_ind = np.delete(search_ind, i)
-        print(best_ind)
+        print(str(round(len(sorted_ind)/P * 100,2))+"%")
 
     output_dic = {}
     output_dic["sorted_ind"]=sorted_ind 
-    save_dic(output_dic, parameters_path, data, "sorted_ind")
+    output_dic["test_error_sorted"]=test_error_sorted 
+    output_dic["train_error_sorted"]=train_error_sorted 
+    output_dic["test_acc_sorted"]=test_acc_sorted 
+    output_dic["train_acc_sorted"]=train_acc_sorted 
+    save_dic(output_dic, parameters_path, data, "sorted")
 
-    FontSize = 11
+    FontSize = 18
     csfont = {'fontname':'sans-serif'}
     plt.subplots()
-    plt.plot(np.arange(1,P+1), test_error_sorted, 'r-', label="Test NME")
-    plt.plot(np.arange(1,P+1), train_error_sorted, 'b-', label="Train NME")
+    plt.plot(np.arange(1,P+1), test_error_sorted, 'r-', label="Test", linewidth=3)
+    plt.plot(np.arange(1,P+1), train_error_sorted, 'b-', label="Train", linewidth=2)
     plt.legend(loc='best', fontsize=FontSize)
     plt.grid()
     plt.xlabel("Number of input features",fontdict=csfont, fontsize=FontSize)
-    plt.ylabel("Normalized Loss (dB)",fontdict=csfont, fontsize=FontSize)
-    plt.title(data+", SSFN", loc='center', fontsize=FontSize)
-    plt.xticks(fontsize=FontSize+2)
-    plt.yticks(fontsize=FontSize+2)
-    plt.savefig(result_path +"Err_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png")
+    plt.ylabel("Normalized error (dB)",fontdict=csfont, fontsize=FontSize)
+    # plt.title(data+", SSFNN", loc='center', fontsize=FontSize)
+    plt.xticks(fontsize=FontSize)
+    plt.yticks(fontsize=FontSize)
+    plt.tight_layout()
+    plt.savefig(result_path +"Err_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
     plt.close()
 
     if data=="MNIST":
         csfont = {'fontname':'sans-serif'}
         plt.subplots()
-        plt.plot(np.arange(1,P+1), test_acc_sorted, 'r-', label="Test Accuracy")
-        plt.plot(np.arange(1,P+1), train_acc_sorted, 'b-', label="Train Accuracy")
+        plt.plot(np.arange(1,P+1), test_acc_sorted, 'r-', label="Test Accuracy", linewidth=2)
+        plt.plot(np.arange(1,P+1), train_acc_sorted, 'b-', label="Train Accuracy", linewidth=2)
         plt.legend(loc='best')
         plt.grid()
-        plt.xlabel("Number of input features",fontdict=csfont)
-        plt.ylabel("Classification accuracy",fontdict=csfont)
-        plt.title(data+", SSFN", loc='center')
-        plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png")
+        plt.xlabel("Number of input features",fontdict=csfont, fontsize=FontSize)
+        plt.ylabel("Classification accuracy",fontdict=csfont, fontsize=FontSize)
+        # plt.title(data+", SSFN", loc='center')
+        plt.xticks(fontsize=FontSize)
+        plt.yticks(fontsize=FontSize)
+        plt.tight_layout()
+        plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
         plt.close()
 
 def MonteCarlo_NMP(J,Pextra,LA,args):
@@ -272,7 +279,7 @@ def MonteCarlo_NMP(J,Pextra,LA,args):
                 else:
                     X_tr = X_train[[i],:]
                     X_ts = X_test[[i],:]
-                train_error, test_error = SSFN(X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+                train_error, test_error, _, _ = SSFN(X_tr, X_ts, T_train, T_test, SSFN_hparameters)
                 train_error_array = np.append(train_error_array, train_error)
                 test_error_array = np.append(test_error_array, test_error)
                 
@@ -312,17 +319,20 @@ def acc_vs_J(_logger,args):
     SampleSize = np.arange(50,1050,50)  # [100,1000,10000]
     LA = "None"
 
-    # args.data = "Ohm"
-    # _logger.info("The dataset we use is {}".format(args.data))
-    # accuracy_Ohm = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,0,LA,_logger,args) for J in SampleSize)
+    Pextra = 8
+    args.data = "Ohm"
+    _logger.info("The dataset we use is {}".format(args.data))
+    accuracy_Ohm = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
     
-    # args.data = "Planck"
-    # _logger.info("The dataset we use is {}".format(args.data))
-    # accuracy_Planck = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,0,LA,_logger,args) for J in SampleSize)
+    Pextra = 8
+    args.data = "Planck"
+    _logger.info("The dataset we use is {}".format(args.data))
+    accuracy_Planck = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
     
-    # args.data = "Gravitation"
-    # _logger.info("The dataset we use is {}".format(args.data))
-    # accuracy_Gravitation = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,0,LA,args) for J in SampleSize)
+    Pextra = 7
+    args.data = "Gravitation"
+    _logger.info("The dataset we use is {}".format(args.data))
+    accuracy_Gravitation = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
 
     # Pextra = 50
     # args.data = "NN"
@@ -343,24 +353,31 @@ def acc_vs_J(_logger,args):
     # _logger.info("The dataset we use is {}".format(args.data))
     # accuracy_Gravitation_LA = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,0,LA,args) for J in SampleSize)
 
-    Pextra = 50
-    args.data = "NN"
-    _logger.info("The dataset we use is {}".format(args.data))
-    accuracy_NN_LA = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
+    # Pextra = 50
+    # args.data = "NN"
+    # _logger.info("The dataset we use is {}".format(args.data))
+    # accuracy_NN_LA = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
     
     csfont = {'fontname':'sans-serif'}
     plt.subplots()
-    # plt.plot(SampleSize, accuracy_Ohm, 'r-', label="Ohm's law")
-    # plt.plot(SampleSize, accuracy_Planck, 'b-', label="Planck's law")
-    plt.plot(SampleSize, accuracy_NN_LA, 'g:', label="NN model LookAhead")
-    # plt.plot(SampleSize, accuracy_Gravitation_LA, 'g:', label="Gravitation law LookAhead")
+    plt.plot(SampleSize, accuracy_Ohm, 'r-', label="Ohm's law")
+    plt.plot(SampleSize, accuracy_Planck, 'b-', label="Planck's law")
+    # plt.plot(SampleSize, accuracy_NN_LA, 'g:', label="NN model LookAhead")
+    plt.plot(SampleSize, accuracy_Gravitation, 'g:', label="Gravitation law")
     plt.legend(loc='best')
     plt.grid()
     plt.xlabel("Sample Size (J)",fontdict=csfont)
     plt.ylabel("Detection Accuracy (%)",fontdict=csfont)
-    plt.title("SSFN", loc='center')
-    plt.savefig(result_path +"LA_Acc_vs_J_"+args.data+".png")
+    # plt.title("SSFN", loc='center')
+    # plt.savefig(result_path +"Acc_vs_J_"+args.data+".png")
+    plt.savefig(result_path +"Acc_vs_J.png")
     plt.close()
+
+    output_dic = {}
+    output_dic["accuracy_Ohm"]=accuracy_Ohm 
+    output_dic["accuracy_Planck"]=accuracy_Planck
+    output_dic["accuracy_Gravitation"]=accuracy_Gravitation
+    save_dic(output_dic, parameters_path, "three_laws", "accuracy")
 
 def acc_vs_P(_logger,args):
     """[This function plots NMP detection accuracy versus total number of input features (P), refer to Figure 4 in the Overleaf.]
@@ -397,7 +414,7 @@ def acc_vs_P(_logger,args):
     plt.xlabel("Total number of features (P)",fontdict=csfont)
     plt.ylabel("Detection Accuracy (%)",fontdict=csfont)
     plt.title("SSFN", loc='center')
-    plt.savefig(result_path +"Acc_vs_P.png")
+    plt.savefig(result_path +"Acc_vs_P.png", dpi=600)
     plt.close()
 
 def plot_MNIST(_logger,args):
@@ -414,7 +431,8 @@ def plot_MNIST(_logger,args):
 
     Ntr = X_train.shape[1]
     Nts = X_test.shape[1]
-        
+    P=X_train.shape[0]
+
     parameters_path = "./parameters/"
     result_path = "./results/"
     LA = "None"
@@ -424,13 +442,82 @@ def plot_MNIST(_logger,args):
     NodeNum = SSFN_hparameters["NodeNum"]
     
     save_name = "sorted"
-    my_dic = load_dic( parameters_path, data, "sorted_ind")
-    show_image(X_train[:,1],X_train[:,20],X_train[:,30],my_dic["sorted_ind"], save_name)
+    my_dic = load_dic( parameters_path, data, save_name)
 
-    save_name = "random"
-    random_ind = np.arange(0,784)
-    np.random.shuffle(random_ind)
-    show_image(X_train[:,1],X_train[:,20],X_train[:,30], random_ind, save_name)
+
+    # show_image(X_train[:,1],X_train[:,20],X_train[:,30],my_dic["sorted_ind"], save_name)
+    # save_name = "random"
+    # random_ind = np.arange(0,784)
+    # np.random.shuffle(random_ind)
+    # show_image(X_train[:,1],X_train[:,20],X_train[:,30], random_ind, save_name)
+
+    ############################################################################################################################################
+    ############################################################################################################################################
+    ############################################################################################################################################
+
+    test_error_sorted = my_dic["test_error_sorted"]
+    train_error_sorted = my_dic["train_error_sorted"]
+    test_acc_sorted = my_dic["test_acc_sorted"]
+    train_acc_sorted = my_dic["train_acc_sorted"]
+
+    FontSize = 14
+    csfont = {'fontname':'sans-serif'}
+    plt.subplots()
+    plt.plot(np.arange(1,P+1), test_error_sorted, 'r-', label="Test", linewidth=2)
+    plt.plot(np.arange(1,P+1), train_error_sorted, 'b-', label="Train", linewidth=2)
+    plt.legend(loc='best', fontsize=FontSize)
+    plt.grid()
+    plt.xlabel("Number of input features",fontdict=csfont, fontsize=FontSize)
+    plt.ylabel("Normalized error (dB)",fontdict=csfont, fontsize=FontSize)
+    # plt.title(data+", SSFNN", loc='center', fontsize=FontSize)
+    plt.xticks(fontsize=FontSize)
+    plt.yticks(fontsize=FontSize)
+    plt.tight_layout()
+    plt.savefig(result_path +"Err_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
+    plt.close()
+
+    csfont = {'fontname':'sans-serif'}
+    plt.subplots()
+    plt.plot(np.arange(1,P+1), test_acc_sorted * 100, 'r-', label="Test", linewidth=2)
+    plt.plot(np.arange(1,P+1), train_acc_sorted * 100, 'b-', label="Train", linewidth=2)
+    plt.legend(loc='best', fontsize=FontSize)
+    plt.grid()
+    plt.xlabel("Number of input features",fontdict=csfont, fontsize=FontSize)
+    plt.ylabel("Classification accuracy (%)",fontdict=csfont, fontsize=FontSize)
+    # plt.title(data+", SSFN", loc='center')
+    plt.xticks(fontsize=FontSize)
+    plt.yticks(fontsize=FontSize)
+    plt.tight_layout()
+    plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
+    plt.close()
+
+def my_plot(_logger,args):
+    SampleSize = np.arange(50,1050,50)  # [100,1000,10000]
+    parameters_path = "./parameters/"
+    result_path = "./results/"
+
+    my_dic = load_dic( parameters_path, "three_laws", "accuracy")
+    accuracy_Ohm = my_dic["accuracy_Ohm"]
+    accuracy_Planck = my_dic["accuracy_Planck"]
+    accuracy_Gravitation = my_dic["accuracy_Gravitation"]
+
+    FontSize = 14
+    csfont = {'fontname':'sans-serif'}
+    plt.subplots()
+    plt.plot(SampleSize, accuracy_Ohm, 'r-', label="Ohm's law", linewidth=2)
+    plt.plot(SampleSize, accuracy_Planck, 'b--', label="Planck's law", linewidth=2)
+    # plt.plot(SampleSize, accuracy_NN_LA, 'g:', label="NN model LookAhead")
+    plt.plot(SampleSize, accuracy_Gravitation, 'g:', label="Gravitation law", linewidth=3)
+    plt.legend(loc='best', fontsize=FontSize)
+    plt.grid()
+    plt.xlabel("Sample size (J)",fontdict=csfont, fontsize=FontSize)
+    plt.ylabel("Detection accuracy (%)",fontdict=csfont, fontsize=FontSize)
+    plt.xticks(fontsize=FontSize)
+    plt.yticks(fontsize=FontSize)
+    plt.tight_layout()
+    plt.savefig(result_path +"Acc_vs_J.png", dpi=600)
+    plt.close()
+
 
 def main():
     args = define_parser()
@@ -441,10 +528,11 @@ def main():
     SSFN_hparameters = set_hparameters(args)
     
     _logger.info("Construct SSFN")
-    Err_vs_feat(args)
+    # Err_vs_feat(args)
     # acc_vs_J(_logger,args)
     # acc_vs_P(_logger,args)
-    # plot_MNIST(_logger,args)
+    plot_MNIST(_logger,args)
+    # my_plot(_logger,args)
 
 if __name__ == '__main__':
     main()
