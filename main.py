@@ -504,8 +504,8 @@ def my_plot(_logger,args):
     FontSize = 14
     csfont = {'fontname':'sans-serif'}
     plt.subplots()
-    plt.plot(SampleSize, accuracy_Ohm, 'r-', label="Ohm's law", linewidth=2)
-    plt.plot(SampleSize, accuracy_Planck, 'b--', label="Planck's law", linewidth=2)
+    plt.plot(SampleSize, accuracy_Ohm, 'r-', label="Ohm law", linewidth=2)
+    plt.plot(SampleSize, accuracy_Planck, 'b--', label="Planck law", linewidth=2)
     # plt.plot(SampleSize, accuracy_NN_LA, 'g:', label="NN model LookAhead")
     plt.plot(SampleSize, accuracy_Gravitation, 'g:', label="Gravitation law", linewidth=3)
     plt.legend(loc='best', fontsize=FontSize)
@@ -531,8 +531,8 @@ def main():
     # Err_vs_feat(args)
     # acc_vs_J(_logger,args)
     # acc_vs_P(_logger,args)
-    plot_MNIST(_logger,args)
-    # my_plot(_logger,args)
+    # plot_MNIST(_logger,args)
+    my_plot(_logger,args)
 
 if __name__ == '__main__':
     main()
