@@ -339,7 +339,7 @@ def acc_vs_J(_logger,args):
     # _logger.info("The dataset we use is {}".format(args.data))
     # accuracy_NN = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
 
-    LA = "LookAhead"
+    # LA = "LookAhead"
 
     # args.data = "Ohm"
     # _logger.info("The dataset we use is {}".format(args.data))
