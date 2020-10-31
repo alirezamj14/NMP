@@ -230,6 +230,8 @@ def Err_vs_feat(args):
         plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
         plt.close()
 
+    return sorted_ind
+
 def MonteCarlo_NMP(J,Pextra,LA,args):
     """[This function is used for parallel processing when doing Monte Carlo trials. 
     It counts the number of correct index detection across several trials and returns the detection accuracy of NMP for a fixed J and Pextra.]
@@ -539,6 +541,17 @@ def main():
     # acc_vs_P(_logger,args)
     # plot_MNIST(_logger,args)
     # my_plot(_logger,args)
+
+def NMP(X_train, X_test, T_train, T_test):
+    args = define_parser()
+
+    sorted_ind = Err_vs_feat(args)
+    # acc_vs_J(_logger,args)
+    # acc_vs_P(_logger,args)
+    # plot_MNIST(_logger,args)
+    # my_plot(_logger,args)
+
+    return sorted_ind
 
 if __name__ == '__main__':
     main()

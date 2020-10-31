@@ -1,6 +1,7 @@
 import logging 
 import argparse
 from SSFN import SSFN
+from NMP import NMP
 from MyFunctions import *
 from load_dataset import *
 import multiprocessing
@@ -14,7 +15,7 @@ def define_parser():
     parser.add_argument("--kMax", type=int, default=100, help="Iteration number of ADMM")
     parser.add_argument("--NodeNum", type=int, default=100, help="Max number of random nodes on each layer")
     parser.add_argument("--LayerNum", type=int, default=5, help="Parameter for ADMM")
-    parser.add_argument("--J", type=int, default=50, help="Sample Size")
+    parser.add_argument("--J", type=int, default=1000, help="Sample Size")
     parser.add_argument("--Pextra", type=int, default=7, help="Number of extra random features")
     args = parser.parse_args()
     return args
@@ -47,7 +48,14 @@ def main():
     X_train, X_test, T_train, T_test = define_dataset(args)
     _logger.info("The dataset we use is {}".format(args.data))
 
-    
+
+    S_hat = NMP(X_train, X_test, T_train, T_test)        
+
+    MyFPSR = FPSR([0, 1, 2],S_hat[0:3]) 
+    print("FPSR: " + str(MyFPSR))
+    MyFNSR = FNSR([0, 1, 2],S_hat[0:3]) 
+    print("FNSR: " + str(MyFNSR))
+            
     _logger.info("Construct SSFN")
     # acc_vs_J(_logger,args)
     # acc_vs_P(_logger,args)
