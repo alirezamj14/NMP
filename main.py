@@ -10,14 +10,14 @@ from joblib import Parallel, delayed
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run progressive learning")
-    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="Gravitation", help="Input dataset available as the paper shows")
     parser.add_argument("--lam", type=float, default=10**(2), help="Reguralized parameters on the least-square problem")
     parser.add_argument("--mu", type=float, default=10**(3), help="Parameter for ADMM")
     parser.add_argument("--kMax", type=int, default=100, help="Iteration number of ADMM")
     parser.add_argument("--NodeNum", type=int, default=100, help="Max number of random nodes on each layer")
-    parser.add_argument("--LayerNum", type=int, default=1, help="Parameter for ADMM")
-    parser.add_argument("--J", type=int, default=1000, help="Sample Size")
-    parser.add_argument("--Pextra", type=int, default=0, help="Number of extra random features")
+    parser.add_argument("--LayerNum", type=int, default=5, help="Parameter for ADMM")
+    parser.add_argument("--J", type=int, default=50, help="Sample Size")
+    parser.add_argument("--Pextra", type=int, default=7, help="Number of extra random features")
     args = parser.parse_args()
     return args
 
@@ -182,7 +182,13 @@ def Err_vs_feat(args):
         test_acc_sorted = np.append(test_acc_sorted, test_acc_array[i])
         sorted_ind = np.append(sorted_ind, best_ind)
         search_ind = np.delete(search_ind, i)
-        print(str(round(len(sorted_ind)/P * 100,2))+"%")
+        print(sorted_ind)
+        # print(str(round(len(sorted_ind)/P * 100,2))+"%")
+
+    MyFPSR = FPSR([0, 1, 2],sorted_ind[0:3]) 
+    print("FPSR: " + str(MyFPSR))
+    MyFNSR = FNSR([0, 1, 2],sorted_ind[0:3]) 
+    print("FNSR: " + str(MyFNSR))
 
     output_dic = {}
     output_dic["sorted_ind"]=sorted_ind 
@@ -528,11 +534,11 @@ def main():
     SSFN_hparameters = set_hparameters(args)
     
     _logger.info("Construct SSFN")
-    # Err_vs_feat(args)
+    Err_vs_feat(args)
     # acc_vs_J(_logger,args)
     # acc_vs_P(_logger,args)
     # plot_MNIST(_logger,args)
-    my_plot(_logger,args)
+    # my_plot(_logger,args)
 
 if __name__ == '__main__':
     main()
