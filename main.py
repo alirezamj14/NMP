@@ -15,7 +15,7 @@ def define_parser():
     parser.add_argument("--kMax", type=int, default=100, help="Iteration number of ADMM")
     parser.add_argument("--NodeNum", type=int, default=100, help="Max number of random nodes on each layer")
     parser.add_argument("--LayerNum", type=int, default=5, help="Parameter for ADMM")
-    parser.add_argument("--J", type=int, default=1000, help="Sample Size")
+    parser.add_argument("--J", type=int, default=50, help="Sample Size")
     parser.add_argument("--Pextra", type=int, default=7, help="Number of extra random features")
     args = parser.parse_args()
     return args
