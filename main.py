@@ -48,19 +48,25 @@ def main():
     X_train, X_test, T_train, T_test = define_dataset(args)
     _logger.info("The dataset we use is {}".format(args.data))
 
+    S = [0, 1, 2] # set of true relevant features for gravitational law
 
-    S_hat = NMP(X_train, X_test, T_train, T_test)        
+    MC_Num=10
+    NMP_FPSR = np.zeros((1, MC_Num))
+    NMP_FNSR = np.zeros((1, MC_Num))
 
-    MyFPSR = FPSR([0, 1, 2],S_hat[0:3]) 
-    print("FPSR: " + str(MyFPSR))
-    MyFNSR = FNSR([0, 1, 2],S_hat[0:3]) 
-    print("FNSR: " + str(MyFNSR))
+    for i in np.arange(0,MC_Num):
+        X_train, X_test, T_train, T_test = define_dataset(args)
+        S_hat = NMP(X_train, X_test, T_train, T_test) # set of selected features  
+
+        NMP_FPSR[0,i] = FPSR(S,S_hat[0:len(S)])
+        NMP_FNSR[0,i] = FNSR(S,S_hat[0:len(S)])
+
+    NMP_avg_FPSR = np.mean(NMP_FPSR)
+    NMP_avg_FNSR = np.mean(NMP_FNSR)
+
+    print("Average FPSR of NMP: " + str(NMP_avg_FPSR))
+    print("Average FNSR of NMP: " + str(NMP_avg_FNSR))
             
-    _logger.info("Construct SSFN")
-    # acc_vs_J(_logger,args)
-    # acc_vs_P(_logger,args)
-    # plot_MNIST(_logger,args)
-    # my_plot(_logger,args)
 
 if __name__ == '__main__':
     main()

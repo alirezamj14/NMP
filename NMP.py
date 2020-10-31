@@ -182,13 +182,13 @@ def Err_vs_feat(args):
         test_acc_sorted = np.append(test_acc_sorted, test_acc_array[i])
         sorted_ind = np.append(sorted_ind, best_ind)
         search_ind = np.delete(search_ind, i)
-        print(sorted_ind)
+        # print(sorted_ind)
         # print(str(round(len(sorted_ind)/P * 100,2))+"%")
 
-    MyFPSR = FPSR([0, 1, 2],sorted_ind[0:3]) 
-    print("FPSR: " + str(MyFPSR))
-    MyFNSR = FNSR([0, 1, 2],sorted_ind[0:3]) 
-    print("FNSR: " + str(MyFNSR))
+    # MyFPSR = FPSR([0, 1, 2],sorted_ind[0:3]) 
+    # print("FPSR: " + str(MyFPSR))
+    # MyFNSR = FNSR([0, 1, 2],sorted_ind[0:3]) 
+    # print("FNSR: " + str(MyFNSR))
 
     output_dic = {}
     output_dic["sorted_ind"]=sorted_ind 
