@@ -50,7 +50,7 @@ def set_hparameters(args):
 
 def LookAhead(test_error_array, sorted_ind, search_ind, X_train, X_test, T_train, T_test, SSFN_hparameters):
     """[This function is used for look-ahead variant of NMP.
-    It proceed one more step for the two best indices and choose the best index according to the next step evaluation.]
+        It proceed one more step for the two best indices and choose the best index according to the next step evaluation.]
 
     Args:
         test_error_array ([float]): [Array of test error for each of the features in a step of NMP.]

@@ -12,6 +12,34 @@ import pickle
 from PIL import Image
 import matplotlib.gridspec as gridspec
 
+def FPSR(S, S_hat):   
+    """[This function calculates false positive selection rate (FPSR).]
+
+    Args:
+        S ([int]): [set of true relevant features]
+        S_hat ([int]): [set of selected features]
+
+    Returns:
+        [int]: [returns the ratio features that are falsely selected relevant]
+    """
+    temp = np.setdiff1d(S_hat, S, assume_unique=True)
+    FPSR = len(temp) / len(S_hat)
+    return FPSR
+
+def FNSR(S, S_hat):   
+    """[This function calculates false negative selection rate (FNSR).]
+
+    Args:
+        S ([int]): [set of true relevant features]
+        S_hat ([int]): [set of selected features]
+
+    Returns:
+        [int]: [returns the ratio features that are falsely selected irrelevant]
+    """
+    temp = np.setdiff1d(S, S_hat, assume_unique=True)
+    FNSR = len(temp) / len(S)
+    return FNSR
+
 def show_image(x1,x2,x3,sorted_ind, save_name):
     result_path = "./results/"
     image = {}
