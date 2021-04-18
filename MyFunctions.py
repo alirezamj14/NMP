@@ -20,7 +20,7 @@ def FPSR(S, S_hat):
         S_hat ([int]): [set of selected features]
 
     Returns:
-        [int]: [returns the ratio features that are falsely selected relevant]
+        [int]: [returns the ratio of features that are falsely selected relevant]
     """
     temp = np.setdiff1d(S_hat, S, assume_unique=True)
     FPSR = len(temp) / len(S_hat)
@@ -34,7 +34,7 @@ def FNSR(S, S_hat):
         S_hat ([int]): [set of selected features]
 
     Returns:
-        [int]: [returns the ratio features that are falsely selected irrelevant]
+        [int]: [returns the ratio of features that are falsely selected irrelevant]
     """
     temp = np.setdiff1d(S, S_hat, assume_unique=True)
     FNSR = len(temp) / len(S)
