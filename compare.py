@@ -143,27 +143,27 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
                 model_fpsr[0,i] = FPSR(S,S_hat[0:len(S)])
                 model_fnsr[0,i] = FNSR(S,S_hat[0:len(S)])
         
-        if args.algo=="BART":
+        if args.algo=="BART-20":
+            pass
+
+        if args.algo=="BART-30":
+            pass
+
+        if args.algo=="BART-50":
+            pass
+
+        if args.algo=="SPINN":
+            pass
+
+        if args.algo=="GAM":
+            pass
+
+        if args.algo=="L1-NN":
             pass
 
         save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe)
             
-              
-def plot_figures(args, train_accuracy_scores, test_accuracy_scores, xlabel='Number of input features', ylabel='Normalized error (dB)'):
-    plt.figure()
-    plt.grid()
-    
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-
-    plt.title(args.data + " law with "+ args.algo)
-    plt.plot(train_accuracy_scores, 'b')
-    plt.plot(test_accuracy_scores, 'r--') 
-    plt.legend(["Train", "Test"], loc="lower right")
-
-    plt.show()
-
-
+             
 def main():
     args = define_parser()
 
