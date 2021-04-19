@@ -5,7 +5,7 @@ import os
 import tensorflow as tf
 from numpy.linalg import norm
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import json
 import pickle
@@ -39,6 +39,25 @@ def FNSR(S, S_hat):
     temp = np.setdiff1d(S, S_hat, assume_unique=True)
     FNSR = len(temp) / len(S)
     return FNSR
+
+def compute_mse(S, T):
+    """
+    compute Mean Squared Error: Training error  | Testing error
+
+    Parameters
+    ----------
+    S : np.ndarray
+    predicted matrix
+    T : np.ndarray
+    given matrix
+
+    Returns
+    ----------
+    mse : float
+    MSE value
+    """
+    mse = norm((S - T), 'fro')/ len(S)
+    return mse
 
 def show_image(x1,x2,x3,sorted_ind, save_name):
     result_path = "./results/"
@@ -182,6 +201,7 @@ def calculate_accuracy(S, T):
     T = np.argmax(T, axis=0)
     accuracy = np.sum([Y == T]) / Y.shape[0]
     return accuracy
+
 
 def relu(x):
     return np.maximum(0, x)

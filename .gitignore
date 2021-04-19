@@ -1,4 +1,8 @@
 mat_files/MNIST.mat
+mat_files/Vowel.mat
+parameters/GRAVITATION/
+parameters/MNIST/
+x_old_files/
 __pycache__/SSFN.cpython-37.pyc
 __pycache__/load_dataset.cpython-37.pyc
 __pycache__/MyOptimizers.cpython-37.pyc
