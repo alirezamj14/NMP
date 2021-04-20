@@ -254,10 +254,16 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
                 background = x_train[np.random.choice(x_train.shape[0], 100, replace=False)]
                 # explain predictions of the model on four images
                 e = shap.DeepExplainer(model, background)
-                shap_values = e.shap_values(x_test[1:200])
+                shap_values = e.shap_values(x_test[1:1000])
 
                 total_val = np.sum(np.sum(np.abs(shap_values), axis=0), axis=0).flatten()
                 S_hat = total_val.argsort()[::-1]
+
+                # Just to compare what global features SHAP with DeepLift choose
+                X_train_ori =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)
+                show_image(X_train_ori[:,1],X_train_ori[:,20],X_train_ori[:,30],S_hat, (args.algo+str(i)))
+                
+                #show_image(x_train[1,:].flatten(),x_train[20,:].flatten(),x_train[30,:].flatten(),S_hat, (args.algo+str(i)))
 
                 # Mean squared errors
                 model_msfe[0,i] = score_train[0]
