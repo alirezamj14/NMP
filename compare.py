@@ -1,3 +1,4 @@
+from __future__ import division, print_function
 import matplotlib.pyplot as plt 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.inspection import permutation_importance
@@ -11,6 +12,7 @@ import argparse
 from bartpy.sklearnmodel import SklearnModel
 from bartpy.features.featureselection import SelectNullDistributionThreshold
 from sklearn.pipeline import make_pipeline
+from tensorflow import keras
 
 import pandas as pd
 from MyFunctions import *
@@ -18,8 +20,8 @@ from MyFunctions import *
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run NMP")
-    parser.add_argument("--data", default="GRAVITATION", help="Input dataset available as the paper shows")
-    parser.add_argument("--algo", default="RF", help="The algorithm used for feature selection")
+    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
+    parser.add_argument("--algo", default="DEEPLIFT", help="The algorithm used for feature selection")
     parser.add_argument("--tree_size", default="20", help="The number of trees used")
     parser.add_argument("--MC_Num", default="10", help="The number of MC simulations done")
     args = parser.parse_args()
@@ -37,7 +39,13 @@ def prepare_data(args):
         X_test =  loadmat("./mat_files/MNIST.mat")["test_x"].astype(np.float32)
         T_train =  loadmat("./mat_files/MNIST.mat")["train_y"].astype(np.float32)
         T_test =  loadmat("./mat_files/MNIST.mat")["test_y"].astype(np.float32)
-        return X_train.T, X_test.T, T_train.T, T_test.T
+        with open('./parameters/MNIST_sorted_ind.pkl', 'rb') as f:
+             indices = pickle.load(f) 
+        
+        if args.algo=="RF":
+            return indices['sorted_ind'][:300], X_train.T[:10000], X_test.T[:3000], T_train.T[:10000], T_test.T[:3000]
+        else:
+            return indices['sorted_ind'][:300], X_train.T, X_test.T, T_train.T, T_test.T
 
     if args.data=="GRAVITATION":
         N=10000         # Number of samples  
@@ -54,21 +62,22 @@ def prepare_data(args):
         T_test=F[:,Ntr:]
         return S, X_train.T, X_test.T, T_train.T, T_test.T
 
-def create_model(args, file_path, model, X_train, T_train):
-    if (os.path.isfile(file_path)):
-        print ("--- Loading from the model ---", args.algo)
-        model = joblib.load(file_path)
-    else:
-        print ("--- Creating the model ---", args.algo)
-        model.fit(X_train, T_train)
-        joblib.dump(model, open(file_path, 'wb'), compress=0)
-    return model
-
 def load_parameters(parameter_file):
     # Getting back the objects:
     with open(parameter_file, 'rb') as f:
-        model_avg_fpsr, model_std_fpsr, model_avg_fnsr, model_std_fnsr, model_avg_msfe, model_std_msfe, model_avg_mspe, model_std_mspe = pickle.load(f)
+        model_avg_card, \
+        model_std_card, \
+        model_avg_fpsr, \
+        model_std_fpsr, \
+        model_avg_fnsr, \
+        model_std_fnsr, \
+        model_avg_msfe, \
+        model_std_msfe, \
+        model_avg_mspe, \
+        model_std_mspe = pickle.load(f)
 
+    print ("Cardinality - Mean", model_avg_card) 
+    print ("Cardinality - Std", model_std_card) 
     print ("FPSR - Mean", model_avg_fpsr) 
     print ("FPSR - Std", model_std_fpsr) 
     print ("FNSR - Mean", model_avg_fnsr) 
@@ -78,7 +87,7 @@ def load_parameters(parameter_file):
     print ("MSPE - Mean", model_avg_mspe) 
     print ("MSPE - Std", model_std_mspe)
 
-def save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe):
+def save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe, model_card):
     model_avg_fpsr = np.mean(model_fpsr)
     model_std_fpsr = np.std(model_fpsr)
     
@@ -90,7 +99,12 @@ def save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_ms
     
     model_avg_mspe = np.mean(model_mspe)
     model_std_mspe = np.std(model_mspe)
+
+    model_avg_card = np.mean(model_card)
+    model_std_card = np.std(model_card)
     
+    print ("Cardinality - Mean", model_avg_card) 
+    print ("Cardinality - Std", model_std_card) 
     print ("FPSR - Mean", model_avg_fpsr) 
     print ("FPSR - Std", model_std_fpsr) 
     print ("FNSR - Mean", model_avg_fnsr) 
@@ -100,7 +114,9 @@ def save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_ms
     print ("MSPE - Mean", model_avg_mspe) 
     print ("MSPE - Std", model_std_mspe)
 
-    pickle.dump([model_avg_fpsr,
+    pickle.dump([model_avg_card,
+                model_std_card,
+                model_avg_fpsr,
                 model_std_fpsr,
                 model_avg_fnsr,
                 model_std_fnsr,
@@ -109,9 +125,28 @@ def save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_ms
                 model_avg_mspe,
                 model_std_mspe], open(parameter_file, "wb"))
 
+def create_model(args, file_path, model, X_train, T_train):
+    if (os.path.exists(file_path)):
+        print ("--- Loading from the model ---", args.algo)
+        
+        if args.algo == "DEEPLIFT":
+            model = keras.models.load_model(file_path)
+            model.summary()
+        else:
+            model = joblib.load(file_path)
+    else:
+        print ("--- Creating the model ---", args.algo)
+        
+        if args.algo == "DEEPLIFT":
+            model.fit(X_train, T_train, epochs=3, batch_size=128)
+            model.save(file_path)
+        else:
+            model.fit(X_train, T_train)
+            joblib.dump(model, open(file_path, 'wb'), compress=0)
+    return model
 
 def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
-    start_time = time.time()
+    log_params = False
     file_path_prefix = "./parameters/"
     parameter_file = file_path_prefix + args.data + "/" + args.algo + "_params"
     
@@ -119,6 +154,7 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
     model_fnsr = np.zeros((1, int(args.MC_Num)))
     model_msfe = np.zeros((1, int(args.MC_Num)))
     model_mspe = np.zeros((1, int(args.MC_Num)))
+    model_card = np.zeros((1, int(args.MC_Num)))
 
     if (os.path.isfile(parameter_file)):
         print ("--- Loading from the parameters ---", args.algo, "on", args.data)
@@ -126,6 +162,7 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
     else:
         if args.algo=="RF":
             for i in np.arange(0,int(args.MC_Num)):
+                start_time = time.time()
                 print ("Monte carlo simulation no: ", str(i))
                 file_path = file_path_prefix + args.data + "/" + args.algo + "-" + str(i) + ".joblib"
                 
@@ -142,26 +179,121 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
                 # Selection rate errors
                 model_fpsr[0,i] = FPSR(S,S_hat[0:len(S)])
                 model_fnsr[0,i] = FNSR(S,S_hat[0:len(S)])
+                # Cardinality of the model
+                model_card[0,i] = len(S_hat)
+
+                print ("Time taken for this MC iteration: ", time.time() - start_time)
+            log_params = True
         
-        if args.algo=="BART-20":
+        elif args.algo == "DEEPLIFT":
+            import shap
+            from tensorflow import keras
+            from tensorflow.keras import layers
+
+            # Model / data parameters
+            num_classes = 10
+            input_shape = (28, 28, 1)
+
+            # the data, split between train and test sets
+            (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
+            
+            # Scale images to the [0, 1] range
+            x_train = x_train.astype("float32") / 255
+            x_test = x_test.astype("float32") / 255
+            # Make sure images have shape (28, 28, 1)
+            x_train = np.expand_dims(x_train, -1)
+            x_test = np.expand_dims(x_test, -1)
+            print("x_train shape:", x_train.shape)
+            print(x_train.shape[0], "train samples")
+            print(x_test.shape[0], "test samples")
+
+            # convert class vectors to binary class matrices
+            y_train = keras.utils.to_categorical(y_train, num_classes)
+            y_test = keras.utils.to_categorical(y_test, num_classes)
+
+            """
+            ## Build the model
+            """
+
+            model = keras.Sequential(
+                [
+                    keras.Input(shape=input_shape),
+                    layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
+                    layers.MaxPooling2D(pool_size=(2, 2)),
+                    layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
+                    layers.MaxPooling2D(pool_size=(2, 2)),
+                    layers.Flatten(),
+                    layers.Dropout(0.5),
+                    layers.Dense(num_classes, activation="softmax"),
+                ]
+            )
+            model.summary()
+                        
+            for i in np.arange(0,int(args.MC_Num)):
+                start_time = time.time()
+                print ("Monte carlo simulation no: ", str(i))
+                file_path = file_path_prefix + args.data + "/" + args.algo + "-" + str(i) + ".h5"
+                
+                """
+                ## Train the model
+                """
+
+                batch_size = 128
+                epochs = 15
+
+                model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+                model = create_model(args, file_path, model, x_train, y_train)
+                
+                # Sanity checks
+                score_train = model.evaluate(x_train, y_train, verbose=0)
+                score_test = model.evaluate(x_test, y_test, verbose=0)
+                print("Test loss:", score_test[0])
+                print("Test accuracy:", score_test[1])
+                
+    
+                background = x_train[np.random.choice(x_train.shape[0], 100, replace=False)]
+                # explain predictions of the model on four images
+                e = shap.DeepExplainer(model, background)
+                shap_values = e.shap_values(x_test[1:200])
+
+                total_val = np.sum(np.sum(np.abs(shap_values), axis=0), axis=0).flatten()
+                S_hat = total_val.argsort()[::-1]
+
+                # Mean squared errors
+                model_msfe[0,i] = score_train[0]
+                model_mspe[0,i] = score_test[0]
+                # Selection rate errors
+                model_fpsr[0,i] = FPSR(S,S_hat[0:len(S)])
+                model_fnsr[0,i] = FNSR(S,S_hat[0:len(S)])
+                # Cardinality of the model
+                model_card[0,i] = len(S_hat)
+
+                print ("Time taken for this MC iteration: ", time.time() - start_time)
+            log_params = True
+
+        elif args.algo=="BART-20":
             pass
 
-        if args.algo=="BART-30":
+        elif args.algo=="BART-30":
             pass
 
-        if args.algo=="BART-50":
+        elif args.algo=="BART-50":
             pass
 
-        if args.algo=="SPINN":
+        elif args.algo=="SPINN":
             pass
 
-        if args.algo=="GAM":
+        elif args.algo=="GAM":
             pass
 
-        if args.algo=="L1-NN":
+        elif args.algo=="L1-NN":
             pass
 
-        save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe)
+        else:
+            print("Sorry! No such evaluation exists.")
+        
+        if log_params:
+            save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe, model_card)
             
              
 def main():
@@ -170,6 +302,42 @@ def main():
     S, X_train, X_test, T_train, T_test = prepare_data(args)
 
     run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test)
-    
+  
+
 if __name__ == '__main__':
     main()
+
+
+'''
+    if args.algo=="XBART":
+        from xbart import XBART
+
+        y_train = np.asarray([np.argmax(t, axis=None, out=None) for t in T_train])/10.0
+        x_train = pd.DataFrame(X_train)
+        x_test = pd.DataFrame(X_test)
+
+        xbt = XBART(num_trees = 100, num_sweeps = 40, burnin = 15)
+        xbt.fit(x_train,y_train)
+        xbart_yhat_matrix = xbt.predict(x_test)  # Return n X num_sweeps matrix
+        y_hat = xbart_yhat_matrix[:,15:].mean(axis=1) # Use mean a prediction estimate
+
+    if args.algo=="BART":
+
+        # bart = SklearnModel(n_trees=20, store_in_sample_predictions=False, n_jobs=1) # Use default parameters
+        bart = SklearnModel(n_samples=200,
+                            n_burn=50,
+                            n_trees=20,
+                            store_in_sample_predictions=False,
+                            n_jobs=-1,
+                            n_chains=1) # Use default parameters
+        
+        T_classes = np.asarray([np.argmax(t, axis=None, out=None) for t in T_train])/10.0
+        X = pd.DataFrame(X_train)
+
+        pipeline = make_pipeline(SelectNullDistributionThreshold(bart, n_permutations=20), bart)
+        pipeline_model = create_model(args, file_path, pipeline, X_train, T_classes)
+        pipeline = make_pipeline(SelectNullDistributionThreshold(pipeline_model, 0.75, "local"), pipeline_model)
+
+        print("Feature Proportions", pipeline_model.named_steps["selectnulldistributionthreshold"].feature_proportions)
+
+'''
