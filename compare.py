@@ -13,18 +13,18 @@ from sklearn.pipeline import make_pipeline
 import random
 import pandas as pd
 from MyFunctions import *
-import shap
 import tensorflow as tf
 from tensorflow.keras import layers
-
+import shap
+from xbart import XBART
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run NMP")
-    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
-    parser.add_argument("--algo", default="DEEPLIFT", help="The algorithm used for feature selection")
-    parser.add_argument("--tree_size", default="20", help="The number of trees used")
+    parser.add_argument("--data", default="GRAVITATION", help="Input dataset available as the paper shows")
+    parser.add_argument("--algo", default="BART", help="The algorithm used for feature selection")
+    parser.add_argument("--tree_size", default="20", help="The number of trees used in BART or RF")
     parser.add_argument("--MC_Num", default="10", help="The number of MC simulations done")
-    parser.add_argument("--deeplift_sample_size", default="10", help="The number of samples chosen from deeplift for explaining in each MC simulation")
+    parser.add_argument("--deeplift_sample_size", default="100", help="The number of samples chosen from deeplift for explaining in each MC simulation")
     args = parser.parse_args()
     return args
 
@@ -43,8 +43,13 @@ def prepare_data(args):
         with open('./parameters/MNIST_sorted_ind.pkl', 'rb') as f:
              indices = pickle.load(f) 
         
+                    
         if args.algo=="RF":
             return indices['sorted_ind'][:300], X_train.T[:10000], X_test.T[:3000], T_train.T[:10000], T_test.T[:3000]
+        elif args.algo=="BART":
+            T_train = np.asarray([np.argmax(t, axis=None, out=None) for t in T_train.T])/10.0
+            T_test = np.asarray([np.argmax(t, axis=None, out=None) for t in T_test.T])/10.0
+            return indices['sorted_ind'][:300], X_train.T, X_test.T, T_train, T_test
         else:
             return indices['sorted_ind'][:300], X_train.T, X_test.T, T_train.T, T_test.T
 
@@ -61,7 +66,11 @@ def prepare_data(args):
         T_train=F[:,:Ntr]
         X_test = np.concatenate((m1[:,Ntr:], m2[:,Ntr:], r[:,Ntr:], 10*np.random.rand(fExtra,N-Ntr)+10), axis=0)
         T_test=F[:,Ntr:]
-        return S, X_train.T, X_test.T, T_train.T, T_test.T
+        
+        if args.algo=="BART":
+            return S, X_train.T, X_test.T, T_train.T.flatten(), T_test.T.flatten()
+        else:
+            return S, X_train.T, X_test.T, T_train.T, T_test.T
 
 def load_parameters(parameter_file):
     # Getting back the objects:
@@ -168,83 +177,62 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
     model_mspe = np.zeros((1, int(args.MC_Num)))
     model_card = np.zeros((1, int(args.MC_Num)))
     model_nme  = np.zeros((1, int(args.MC_Num)))
-
+    
     if (os.path.isfile(parameter_file)):
         print ("--- Loading from the parameters ---", args.algo, "on", args.data)
         load_parameters(parameter_file)
     else:
-        if args.algo=="RF":
-            for i in np.arange(0,int(args.MC_Num)):
+        for i in np.arange(0,int(args.MC_Num)):
+            if args.algo=="RF":      
                 start_time = time.time()
                 print ("Monte carlo simulation no: ", str(i))
                 file_path = file_path_prefix + args.data + "/" + args.algo + "-" + str(i) + ".joblib"
                 
-                rf = RandomForestRegressor(n_estimators=100) 
-                rf = create_model(args, file_path, rf, X_train, T_train)
-                importance_vals = rf.feature_importances_
+                model = RandomForestRegressor(n_estimators=100) 
+                model = create_model(args, file_path, model, X_train, T_train)
+                importance_vals = model.feature_importances_
                 
                 # Choose features which has 1% importance according to paper: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6660200/ 
                 S_hat = np.argwhere(importance_vals > 0.01).flatten()
                 
-                # Mean squared errors
-                model_msfe[0,i] = compute_mse(T_train, rf.predict(X_train).reshape(T_train.shape))
-                model_mspe[0,i] = compute_mse(T_test, rf.predict(X_test).reshape(T_test.shape))
-                # Selection rate errors
-                model_fpsr[0,i] = FPSR(S,S_hat[0:len(S)])
-                model_fnsr[0,i] = FNSR(S,S_hat[0:len(S)])
-                # Cardinality of the model
-                model_card[0,i] = len(S_hat)
-                # Normalized Error (NME)
-                model_nme [0,i] = compute_nme(rf.predict(X_test).reshape(T_test.shape), T_test)
-
                 print ("Time taken for this MC iteration: ", time.time() - start_time)
-            log_params = True
+                log_params = True
         
-        elif args.algo == "DEEPLIFT": 
-            # Implemented using DeepExplain in SHAP: https://github.com/slundberg/shap
-            #-------------------------------------------------------------------------#
-            
-            # Model / data parameters
-            num_classes = 10
-            input_shape = (28, 28, 1)
+            elif args.algo == "DEEPLIFT": 
+                # Implemented using DeepExplain in SHAP: https://github.com/slundberg/shap
+                #-------------------------------------------------------------------------#
+                
+                # Model / data parameters
+                num_classes = 10
+                input_shape = (28, 28, 1)
 
-            # the data, split between train and test sets
-            #(X_train, T_train), (X_test, T_test) = tf.keras.datasets.mnist.load_data()
-            # Scale images to the [0, 1] range
-            #X_train = X_train.astype("float32") / 255
-            #X_test = X_test.astype("float32") / 255
-            # convert class vectors to binary class matrices
-            #T_train = tf.keras.utils.to_categorical(T_train, num_classes)
-            #T_test = tf.keras.utils.to_categorical(T_test, num_classes)
+                X_train = X_train.reshape(X_train.shape[0], 28, 28)
+                X_test = X_test.reshape(X_test.shape[0], 28, 28)
+                # Make sure images have shape (28, 28, 1)
+                X_train = np.expand_dims(X_train, -1)
+                X_test = np.expand_dims(X_test, -1)
+                print("X_train shape:", X_train.shape)
+                print(X_train.shape[0], "train samples")
+                print(X_test.shape[0], "test samples")
 
-            X_train = X_train.reshape(X_train.shape[0], 28, 28)
-            X_test = X_test.reshape(X_test.shape[0], 28, 28)
-            # Make sure images have shape (28, 28, 1)
-            X_train = np.expand_dims(X_train, -1)
-            X_test = np.expand_dims(X_test, -1)
-            print("X_train shape:", X_train.shape)
-            print(X_train.shape[0], "train samples")
-            print(X_test.shape[0], "test samples")
+                """
+                ## Build the model
+                """
 
-            """
-            ## Build the model
-            """
-
-            model = tf.keras.Sequential(
-                [
-                    tf.keras.Input(shape=input_shape),
-                    layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
-                    layers.MaxPooling2D(pool_size=(2, 2)),
-                    layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
-                    layers.MaxPooling2D(pool_size=(2, 2)),
-                    layers.Flatten(),
-                    layers.Dropout(0.5),
-                    layers.Dense(num_classes, activation="softmax"),
-                ]
-            )
-            model.summary()
+                model = tf.keras.Sequential(
+                    [
+                        tf.keras.Input(shape=input_shape),
+                        layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
+                        layers.MaxPooling2D(pool_size=(2, 2)),
+                        layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
+                        layers.MaxPooling2D(pool_size=(2, 2)),
+                        layers.Flatten(),
+                        layers.Dropout(0.5),
+                        layers.Dense(num_classes, activation="softmax"),
+                    ]
+                )
+                model.summary()
                         
-            for i in np.arange(0,int(args.MC_Num)):
                 start_time = time.time()
                 print ("Monte carlo simulation no: ", str(i))
                 file_path = file_path_prefix + args.data + "/" + args.algo + "-" + str(i) + ".h5"
@@ -282,54 +270,68 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
                 
                 #show_image(x_train[1,:].flatten(),x_train[20,:].flatten(),x_train[30,:].flatten(),S_hat, (args.algo+str(i)))
 
+                print ("Time taken for this MC iteration: ", time.time() - start_time)
+                log_params = True
+
+            elif args.algo=="BART":
+                # Implemented using XBART: https://github.com/JingyuHe/XBART
+                #----------------------------------------------------------#
+
+                X_train = pd.DataFrame(X_train)
+                X_test = pd.DataFrame(X_test)
+
+                start_time = time.time()
+                print ("Monte carlo simulation no: ", str(i))
+                file_path = file_path_prefix + args.data + "/" + args.algo + str(args.tree_size) + "-" + str(i) + ".joblib"
+
+                model = XBART(num_trees = 20, num_sweeps = 20, burnin = 15, verbose = True, parallel = True)
+                model = create_model(args, file_path, model, X_train, T_train)
+                
+                #--- How to find S_hat ---
+                S_hat = [0, 1, 2]
+
                 # Mean squared errors
                 model_msfe[0,i] = compute_mse(T_train, model.predict(X_train).reshape(T_train.shape))
                 model_mspe[0,i] = compute_mse(T_test, model.predict(X_test).reshape(T_test.shape))
-
                 # Selection rate errors
                 model_fpsr[0,i] = FPSR(S,S_hat[0:len(S)])
                 model_fnsr[0,i] = FNSR(S,S_hat[0:len(S)])
                 # Cardinality of the model
                 model_card[0,i] = len(S_hat)
-
                 # Normalized Error (NME)
                 model_nme [0,i] = compute_nme(model.predict(X_test).reshape(T_test.shape), T_test)
 
                 print ("Time taken for this MC iteration: ", time.time() - start_time)
-            log_params = True
+                log_params = True
 
-        elif args.algo=="BART-20":
-            from xbart import XBART
+            elif args.algo=="SPINN":
+                # https://github.com/jjfeng/spinn
+                log_params = False
+                print ("Not yet implemented!")
+                break
 
-            T_train = np.asarray([np.argmax(t, axis=None, out=None) for t in T_train])/10.0
-            X_train = pd.DataFrame(X_train)
-            X_test = pd.DataFrame(X_test)
+            elif args.algo=="GAM":
+                log_params = False
+                print ("Not yet implemented!")
+                break
 
-            xbt = XBART(num_trees = 100, num_sweeps = 40, burnin = 15)
-            xbt.fit(X_train,T_train)
-            xbart_yhat_matrix = xbt.predict(X_test)  # Return n X num_sweeps matrix
-            y_hat = xbart_yhat_matrix[:,15:].mean(axis=1) # Use mean a prediction estimate
-
-
-        elif args.algo=="BART-30":
-            pass
-
-        elif args.algo=="BART-50":
-            pass
-
-        elif args.algo=="SPINN":
-            # https://github.com/jjfeng/spinn
-            pass
-
-        elif args.algo=="GAM":
-            pass
-
-
-        else:
-            print("Sorry! No such evaluation exists.")
+            else:
+                print("Sorry! No such evaluation exists.")
+                break
         
-        if log_params:
-            save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe, model_card, model_nme)
+            if log_params:
+                # Mean squared errors
+                model_msfe[0,i] = compute_mse(T_train, model.predict(X_train).reshape(T_train.shape))
+                model_mspe[0,i] = compute_mse(T_test, model.predict(X_test).reshape(T_test.shape))
+                # Selection rate errors
+                model_fpsr[0,i] = FPSR(S,S_hat[0:len(S)])
+                model_fnsr[0,i] = FNSR(S,S_hat[0:len(S)])
+                # Cardinality of the model
+                model_card[0,i] = len(S_hat)
+                # Normalized Error (NME)
+                model_nme[0,i] = compute_nme(model.predict(X_test).reshape(T_test.shape), T_test)
+
+                save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe, model_card, model_nme)
             
              
 def main():
@@ -342,28 +344,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-'''
-    if args.algo=="XBART":
-        
-    if args.algo=="BART":
-
-        # bart = SklearnModel(n_trees=20, store_in_sample_predictions=False, n_jobs=1) # Use default parameters
-        bart = SklearnModel(n_samples=200,
-                            n_burn=50,
-                            n_trees=20,
-                            store_in_sample_predictions=False,
-                            n_jobs=-1,
-                            n_chains=1) # Use default parameters
-        
-        T_classes = np.asarray([np.argmax(t, axis=None, out=None) for t in T_train])/10.0
-        X = pd.DataFrame(X_train)
-
-        pipeline = make_pipeline(SelectNullDistributionThreshold(bart, n_permutations=20), bart)
-        pipeline_model = create_model(args, file_path, pipeline, X_train, T_classes)
-        pipeline = make_pipeline(SelectNullDistributionThreshold(pipeline_model, 0.75, "local"), pipeline_model)
-
-        print("Feature Proportions", pipeline_model.named_steps["selectnulldistributionthreshold"].feature_proportions)
-
-'''
