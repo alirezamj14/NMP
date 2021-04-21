@@ -59,7 +59,7 @@ def compute_mse(S, T):
     mse = norm((S - T), 'fro')/ len(S)
     return mse
 
-def show_image(x1,x2,x3,sorted_ind, save_name):
+def show_image_old(samples,sorted_ind, save_name):
     result_path = "./results/"
     image = {}
     percentage = [0.2,0.4,0.6,0.8,1] # [0.2,0.4,0.6,0.8,1] # [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
@@ -68,53 +68,70 @@ def show_image(x1,x2,x3,sorted_ind, save_name):
     gs1.update(wspace=0.025, hspace=0.05) # set the spacing between axes.
 
     i = 0
-    y = np.zeros(x1.shape)
-    for p in percentage:
-        temp = int(round(p*x1.shape[0]))
-        index = sorted_ind[0:temp]
-        y[index] = x1[index]
-        sample = np.reshape(y, (28,28))
-        sample = np.transpose(sample)
-        image = Image.fromarray(sample * 255)
-        ax = plt.subplot(gs1[i])
-        ax.set_aspect('equal')
-        # ax = fig.add_subplot(3, len(percentage), i)
-        imgplot = plt.imshow(image)
-        ax.set_title(str(int(p * 100))+"%")
-        plt.axis('off')
-        i = i + 1
+    for x in samples:
+        for p in percentage:
+            y = np.zeros(x.shape)
+            temp = int(round(p*x.shape[0]))
+            index = sorted_ind[0:temp]
+            
+            y[index] = x[index]
+            
+            sample = np.reshape(y, (28,28))
+            sample = np.transpose(sample)
+            image = Image.fromarray(sample * 255)
+            ax = plt.subplot(gs1[i])
+            ax.set_aspect('equal')
+            # ax = fig.add_subplot(3, len(percentage), i)
+            imgplot = plt.imshow(image)
+            ax.set_title(str(int(p * 100))+"%")
+            plt.axis('off')
+            i = i + 1
+    plt.savefig(result_path +"Sample_image_MNIST_"+save_name+".png")
+    plt.close()
 
-    y = np.zeros(x2.shape)
-    for p in percentage:
-        temp = int(round(p*x2.shape[0]))
-        index = sorted_ind[0:temp]
-        y[index] = x2[index]
-        sample = np.reshape(y, (28,28))
-        sample = np.transpose(sample)
-        image = Image.fromarray(sample * 255)
-        ax = plt.subplot(gs1[i])
-        ax.set_aspect('equal')
-        # ax = fig.add_subplot(3, len(percentage), i)
-        imgplot = plt.imshow(image)
-        # ax.set_title(str(int(p * 100))+"%")
-        plt.axis('off')
-        i = i + 1
+def show_image(samples, sorted_ind, save_name):
+    result_path = "./results/"
+    image = {}
+    percentage = [0.2,0.4,0.6,0.8,1] # [0.2,0.4,0.6,0.8,1] # [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+    fig = plt.figure()
+    gs1 = gridspec.GridSpec(len(samples), len(percentage))
+    gs1.update(wspace=0.025, hspace=0.05) # set the spacing between axes.
 
-    y = np.zeros(x3.shape)
-    for p in percentage:
-        temp = int(round(p*x3.shape[0]))
-        index = sorted_ind[0:temp]
-        y[index] = x3[index]
-        sample = np.reshape(y, (28,28))
-        sample = np.transpose(sample)
-        image = Image.fromarray(sample * 255)
-        ax = plt.subplot(gs1[i])
-        ax.set_aspect('equal')
-        # ax = fig.add_subplot(3, len(percentage), i)
-        imgplot = plt.imshow(image)
-        # ax.set_title(str(int(p * 100))+"%")
-        plt.axis('off')
-        i = i + 1
+    i = 0
+    feature_len = len(sorted_ind)
+    for x in samples:
+        for p in percentage:
+            y = np.zeros(x.shape)
+            temp = int(round(p*feature_len))
+            index = sorted_ind[0:temp]
+            
+            y[index] = 1 # Identify the feature positions
+            feature = np.reshape(y, (28,28))
+            feature = np.transpose(feature)
+            #feature[feature>0] = 1
+
+            sample = np.reshape(x, (28,28))
+            sample = np.transpose(sample)
+            #sample[sample>0] = 1
+            zero = np.zeros(sample.shape)
+
+            dummy_RGB_image = np.repeat(sample[..., np.newaxis], 3, -1)
+            feature_image = np.repeat(zero[..., np.newaxis], 3, -1)
+            feature_image[:,:,0] = feature
+            #dummy_RGB_image[:,:,1] = sample
+            #dummy_RGB_image[:,:,2] = sample
+            
+            image = Image.fromarray((dummy_RGB_image * 255).astype(np.uint8))
+            f_image = Image.fromarray((feature_image * 255).astype(np.uint8))
+            ax = plt.subplot(gs1[i])
+            ax.set_aspect('equal')
+            # ax = fig.add_subplot(3, len(percentage), i)
+            params = {'interpolation': 'nearest'}
+            imgplot = plt.imshow(image)
+            plt.imshow(f_image, 'viridis', interpolation='nearest', alpha=0.6)
+            ax.set_title(str(int(p * 100))+"%")
+            plt.axis('off')
+            i = i + 1
 
     plt.savefig(result_path +"Sample_image_MNIST_"+save_name+".png")
     plt.close()

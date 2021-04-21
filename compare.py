@@ -13,7 +13,7 @@ from bartpy.sklearnmodel import SklearnModel
 from bartpy.features.featureselection import SelectNullDistributionThreshold
 from sklearn.pipeline import make_pipeline
 from tensorflow import keras
-
+import random
 import pandas as pd
 from MyFunctions import *
 
@@ -24,6 +24,7 @@ def define_parser():
     parser.add_argument("--algo", default="DEEPLIFT", help="The algorithm used for feature selection")
     parser.add_argument("--tree_size", default="20", help="The number of trees used")
     parser.add_argument("--MC_Num", default="10", help="The number of MC simulations done")
+    parser.add_argument("--deeplift_sample_size", default="10", help="The number of samples chosen from deeplift for explaining in each MC simulation")
     args = parser.parse_args()
     return args
 
@@ -74,7 +75,9 @@ def load_parameters(parameter_file):
         model_avg_msfe, \
         model_std_msfe, \
         model_avg_mspe, \
-        model_std_mspe = pickle.load(f)
+        model_std_mspe, \
+        model_avg_nme, \
+        model_std_nme = pickle.load(f)
 
     print ("Cardinality - Mean", model_avg_card) 
     print ("Cardinality - Std", model_std_card) 
@@ -82,12 +85,14 @@ def load_parameters(parameter_file):
     print ("FPSR - Std", model_std_fpsr) 
     print ("FNSR - Mean", model_avg_fnsr) 
     print ("FNSR - Std", model_std_fnsr) 
-    print ("MFSE - Mean", model_avg_msfe) 
-    print ("MFSE - Std", model_std_msfe) 
-    print ("MSPE - Mean", model_avg_mspe) 
-    print ("MSPE - Std", model_std_mspe)
+    print ("MSFE (Fitting error) - Mean", model_avg_msfe) 
+    print ("MSFE (Fitting error) - Std", model_std_msfe) 
+    print ("MSPE (Prediction error) - Mean", model_avg_mspe) 
+    print ("MSPE (Prediction error) - Std", model_std_mspe)
+    print ("NME  - Mean", model_avg_nme)
+    print ("NME  - Std", model_std_nme)
 
-def save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe, model_card):
+def save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe, model_card, model_nme):
     model_avg_fpsr = np.mean(model_fpsr)
     model_std_fpsr = np.std(model_fpsr)
     
@@ -102,6 +107,9 @@ def save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_ms
 
     model_avg_card = np.mean(model_card)
     model_std_card = np.std(model_card)
+
+    model_avg_nme = np.mean(model_nme)
+    model_std_nme = np.std(model_nme)
     
     print ("Cardinality - Mean", model_avg_card) 
     print ("Cardinality - Std", model_std_card) 
@@ -109,10 +117,12 @@ def save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_ms
     print ("FPSR - Std", model_std_fpsr) 
     print ("FNSR - Mean", model_avg_fnsr) 
     print ("FNSR - Std", model_std_fnsr) 
-    print ("MFSE - Mean", model_avg_msfe) 
-    print ("MFSE - Std", model_std_msfe) 
-    print ("MSPE - Mean", model_avg_mspe) 
-    print ("MSPE - Std", model_std_mspe)
+    print ("MSFE (Fitting error) - Mean", model_avg_msfe) 
+    print ("MSFE (Fitting error) - Std", model_std_msfe) 
+    print ("MSPE (Prediction error) - Mean", model_avg_mspe) 
+    print ("MSPE (Prediction error) - Std", model_std_mspe)
+    print ("NME  - Mean", model_avg_nme)
+    print ("NME  - Std", model_std_nme)
 
     pickle.dump([model_avg_card,
                 model_std_card,
@@ -123,7 +133,9 @@ def save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_ms
                 model_avg_msfe,
                 model_std_msfe,
                 model_avg_mspe,
-                model_std_mspe], open(parameter_file, "wb"))
+                model_std_mspe,
+                model_avg_nme,
+                model_std_nme], open(parameter_file, "wb"))
 
 def create_model(args, file_path, model, X_train, T_train):
     if (os.path.exists(file_path)):
@@ -155,6 +167,7 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
     model_msfe = np.zeros((1, int(args.MC_Num)))
     model_mspe = np.zeros((1, int(args.MC_Num)))
     model_card = np.zeros((1, int(args.MC_Num)))
+    model_nme  = np.zeros((1, int(args.MC_Num)))
 
     if (os.path.isfile(parameter_file)):
         print ("--- Loading from the parameters ---", args.algo, "on", args.data)
@@ -181,11 +194,13 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
                 model_fnsr[0,i] = FNSR(S,S_hat[0:len(S)])
                 # Cardinality of the model
                 model_card[0,i] = len(S_hat)
+                # Normalized Error (NME)
+                model_nme [0,i] = compute_nme(rf.predict(X_test).reshape(T_test.shape), T_test)
 
                 print ("Time taken for this MC iteration: ", time.time() - start_time)
             log_params = True
         
-        elif args.algo == "DEEPLIFT":
+        elif args.algo == "DEEPLIFT": # Implemented using DeepExplain in SHAP: https://github.com/slundberg/shap
             import shap
             from tensorflow import keras
             from tensorflow.keras import layers
@@ -254,25 +269,34 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
                 background = x_train[np.random.choice(x_train.shape[0], 100, replace=False)]
                 # explain predictions of the model on four images
                 e = shap.DeepExplainer(model, background)
-                shap_values = e.shap_values(x_test[1:1000])
+                
+                x_test_sample = x_test[np.random.choice(x_test.shape[0], int(args.deeplift_sample_size), replace=False), :]
+
+                shap_values = e.shap_values(x_test_sample)
 
                 total_val = np.sum(np.sum(np.abs(shap_values), axis=0), axis=0).flatten()
                 S_hat = total_val.argsort()[::-1]
 
                 # Just to compare what global features SHAP with DeepLift choose
                 X_train_ori =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)
-                show_image(X_train_ori[:,1],X_train_ori[:,20],X_train_ori[:,30],S_hat, (args.algo+str(i)))
+                show_image([X_train_ori[:,100],X_train_ori[:,200],X_train_ori[:,300]],S_hat[0:len(S)], (args.algo+str(i)))
                 
                 #show_image(x_train[1,:].flatten(),x_train[20,:].flatten(),x_train[30,:].flatten(),S_hat, (args.algo+str(i)))
 
                 # Mean squared errors
-                model_msfe[0,i] = score_train[0]
-                model_mspe[0,i] = score_test[0]
+                model_msfe[0,i] = compute_mse(y_train, model.predict(x_train).reshape(y_train.shape))
+                model_mspe[0,i] = compute_mse(y_test, model.predict(x_test).reshape(y_test.shape))
+
+
                 # Selection rate errors
                 model_fpsr[0,i] = FPSR(S,S_hat[0:len(S)])
                 model_fnsr[0,i] = FNSR(S,S_hat[0:len(S)])
                 # Cardinality of the model
                 model_card[0,i] = len(S_hat)
+
+                # Normalized Error (NME)
+                model_nme [0,i] = compute_nme(model.predict(x_test).reshape(y_test.shape), y_test)
+
 
                 print ("Time taken for this MC iteration: ", time.time() - start_time)
             log_params = True
@@ -292,14 +316,12 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
         elif args.algo=="GAM":
             pass
 
-        elif args.algo=="L1-NN":
-            pass
 
         else:
             print("Sorry! No such evaluation exists.")
         
         if log_params:
-            save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe, model_card)
+            save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe, model_card, model_nme)
             
              
 def main():
