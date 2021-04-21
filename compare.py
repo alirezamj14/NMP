@@ -20,11 +20,11 @@ from xbart import XBART
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run NMP")
-    parser.add_argument("--data", default="GRAVITATION", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
     parser.add_argument("--algo", default="BART", help="The algorithm used for feature selection")
     parser.add_argument("--tree_size", default="20", help="The number of trees used in BART or RF")
     parser.add_argument("--MC_Num", default="10", help="The number of MC simulations done")
-    parser.add_argument("--deeplift_sample_size", default="100", help="The number of samples chosen from deeplift for explaining in each MC simulation")
+    parser.add_argument("--deeplift_sample_size", default="1000", help="The number of samples chosen from deeplift for explaining in each MC simulation")
     args = parser.parse_args()
     return args
 
@@ -163,13 +163,17 @@ def create_model(args, file_path, model, X_train, T_train):
             model.save(file_path)
         else:
             model.fit(X_train, T_train)
-            joblib.dump(model, open(file_path, 'wb'), compress=0)
+            if args.algo != "BART":
+                joblib.dump(model, open(file_path, 'wb'), compress=0)
     return model
 
 def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
     log_params = False
     file_path_prefix = "./parameters/"
-    parameter_file = file_path_prefix + args.data + "/" + args.algo + "_params"
+    if args.algo == "BART":
+        parameter_file = file_path_prefix + args.data + "/" + args.algo + str(args.tree_size) + "_params"
+    else:
+        parameter_file = file_path_prefix + args.data + "/" + args.algo + "_params"
     
     model_fpsr = np.zeros((1, int(args.MC_Num)))
     model_fnsr = np.zeros((1, int(args.MC_Num)))
@@ -183,9 +187,9 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
         load_parameters(parameter_file)
     else:
         for i in np.arange(0,int(args.MC_Num)):
+            print ("Monte carlo simulation no: ", str(i))
+            start_time = time.time()
             if args.algo=="RF":      
-                start_time = time.time()
-                print ("Monte carlo simulation no: ", str(i))
                 file_path = file_path_prefix + args.data + "/" + args.algo + "-" + str(i) + ".joblib"
                 
                 model = RandomForestRegressor(n_estimators=100) 
@@ -195,7 +199,6 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
                 # Choose features which has 1% importance according to paper: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6660200/ 
                 S_hat = np.argwhere(importance_vals > 0.01).flatten()
                 
-                print ("Time taken for this MC iteration: ", time.time() - start_time)
                 log_params = True
         
             elif args.algo == "DEEPLIFT": 
@@ -233,8 +236,6 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
                 )
                 model.summary()
                         
-                start_time = time.time()
-                print ("Monte carlo simulation no: ", str(i))
                 file_path = file_path_prefix + args.data + "/" + args.algo + "-" + str(i) + ".h5"
                 
                 """
@@ -270,38 +271,30 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
                 
                 #show_image(x_train[1,:].flatten(),x_train[20,:].flatten(),x_train[30,:].flatten(),S_hat, (args.algo+str(i)))
 
-                print ("Time taken for this MC iteration: ", time.time() - start_time)
                 log_params = True
 
             elif args.algo=="BART":
                 # Implemented using XBART: https://github.com/JingyuHe/XBART
                 #----------------------------------------------------------#
-
                 X_train = pd.DataFrame(X_train)
                 X_test = pd.DataFrame(X_test)
 
-                start_time = time.time()
-                print ("Monte carlo simulation no: ", str(i))
+                # Ugly hack otherwise xbart fit does not work
+                T_train = T_train.flatten()
+                T_test = T_test.flatten()
+
                 file_path = file_path_prefix + args.data + "/" + args.algo + str(args.tree_size) + "-" + str(i) + ".joblib"
 
                 model = XBART(num_trees = 20, num_sweeps = 20, burnin = 15, verbose = True, parallel = True)
                 model = create_model(args, file_path, model, X_train, T_train)
                 
-                #--- How to find S_hat ---
-                S_hat = [0, 1, 2]
+                S_hat = sorted(model.importance, key=model.importance.get)[::-1]
+                print(S_hat)
 
-                # Mean squared errors
-                model_msfe[0,i] = compute_mse(T_train, model.predict(X_train).reshape(T_train.shape))
-                model_mspe[0,i] = compute_mse(T_test, model.predict(X_test).reshape(T_test.shape))
-                # Selection rate errors
-                model_fpsr[0,i] = FPSR(S,S_hat[0:len(S)])
-                model_fnsr[0,i] = FNSR(S,S_hat[0:len(S)])
-                # Cardinality of the model
-                model_card[0,i] = len(S_hat)
-                # Normalized Error (NME)
-                model_nme [0,i] = compute_nme(model.predict(X_test).reshape(T_test.shape), T_test)
+                # Ugly hack otherwise xbart predict does not work
+                T_train = T_train.reshape(X_train.shape[0], 1)
+                T_test = T_test.reshape(X_test.shape[0], 1)
 
-                print ("Time taken for this MC iteration: ", time.time() - start_time)
                 log_params = True
 
             elif args.algo=="SPINN":
@@ -333,6 +326,8 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
 
                 save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe, model_card, model_nme)
             
+            print ("Time taken for this MC iteration: ", time.time() - start_time)
+
              
 def main():
     args = define_parser()

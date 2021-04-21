@@ -56,7 +56,7 @@ def compute_mse(S, T):
     mse : float
     MSE value
     """
-    mse = norm((S - T), 'fro')/ len(S)
+    mse = norm((S - T), 'fro') / len(S)
     return mse
 
 def show_image_old(samples,sorted_ind, save_name):
