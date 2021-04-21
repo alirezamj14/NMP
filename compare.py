@@ -9,13 +9,13 @@ from scipy.io import loadmat
 import time
 import pickle
 import argparse
-from bartpy.sklearnmodel import SklearnModel
-from bartpy.features.featureselection import SelectNullDistributionThreshold
 from sklearn.pipeline import make_pipeline
-from tensorflow import keras
 import random
 import pandas as pd
 from MyFunctions import *
+import shap
+import tensorflow as tf
+from tensorflow.keras import layers
 
 
 def define_parser():
@@ -142,7 +142,7 @@ def create_model(args, file_path, model, X_train, T_train):
         print ("--- Loading from the model ---", args.algo)
         
         if args.algo == "DEEPLIFT":
-            model = keras.models.load_model(file_path)
+            model = tf.keras.models.load_model(file_path)
             model.summary()
         else:
             model = joblib.load(file_path)
@@ -200,39 +200,39 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
                 print ("Time taken for this MC iteration: ", time.time() - start_time)
             log_params = True
         
-        elif args.algo == "DEEPLIFT": # Implemented using DeepExplain in SHAP: https://github.com/slundberg/shap
-            import shap
-            from tensorflow import keras
-            from tensorflow.keras import layers
-
+        elif args.algo == "DEEPLIFT": 
+            # Implemented using DeepExplain in SHAP: https://github.com/slundberg/shap
+            #-------------------------------------------------------------------------#
+            
             # Model / data parameters
             num_classes = 10
             input_shape = (28, 28, 1)
 
             # the data, split between train and test sets
-            (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
-            
+            #(X_train, T_train), (X_test, T_test) = tf.keras.datasets.mnist.load_data()
             # Scale images to the [0, 1] range
-            x_train = x_train.astype("float32") / 255
-            x_test = x_test.astype("float32") / 255
-            # Make sure images have shape (28, 28, 1)
-            x_train = np.expand_dims(x_train, -1)
-            x_test = np.expand_dims(x_test, -1)
-            print("x_train shape:", x_train.shape)
-            print(x_train.shape[0], "train samples")
-            print(x_test.shape[0], "test samples")
-
+            #X_train = X_train.astype("float32") / 255
+            #X_test = X_test.astype("float32") / 255
             # convert class vectors to binary class matrices
-            y_train = keras.utils.to_categorical(y_train, num_classes)
-            y_test = keras.utils.to_categorical(y_test, num_classes)
+            #T_train = tf.keras.utils.to_categorical(T_train, num_classes)
+            #T_test = tf.keras.utils.to_categorical(T_test, num_classes)
+
+            X_train = X_train.reshape(X_train.shape[0], 28, 28)
+            X_test = X_test.reshape(X_test.shape[0], 28, 28)
+            # Make sure images have shape (28, 28, 1)
+            X_train = np.expand_dims(X_train, -1)
+            X_test = np.expand_dims(X_test, -1)
+            print("X_train shape:", X_train.shape)
+            print(X_train.shape[0], "train samples")
+            print(X_test.shape[0], "test samples")
 
             """
             ## Build the model
             """
 
-            model = keras.Sequential(
+            model = tf.keras.Sequential(
                 [
-                    keras.Input(shape=input_shape),
+                    tf.keras.Input(shape=input_shape),
                     layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
                     layers.MaxPooling2D(pool_size=(2, 2)),
                     layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
@@ -257,20 +257,19 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
                 epochs = 15
 
                 model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
-                model = create_model(args, file_path, model, x_train, y_train)
+                model = create_model(args, file_path, model, X_train, T_train)
                 
                 # Sanity checks
-                score_train = model.evaluate(x_train, y_train, verbose=0)
-                score_test = model.evaluate(x_test, y_test, verbose=0)
+                score_train = model.evaluate(X_train, T_train, verbose=0)
+                score_test = model.evaluate(X_test, T_test, verbose=0)
                 print("Test loss:", score_test[0])
-                print("Test accuracy:", score_test[1])
-                
+                print("Test accuracy:", score_test[1]) 
     
-                background = x_train[np.random.choice(x_train.shape[0], 100, replace=False)]
+                background = X_train[np.random.choice(X_train.shape[0], 100, replace=False)]
                 # explain predictions of the model on four images
                 e = shap.DeepExplainer(model, background)
                 
-                x_test_sample = x_test[np.random.choice(x_test.shape[0], int(args.deeplift_sample_size), replace=False), :]
+                x_test_sample = X_test[np.random.choice(X_test.shape[0], int(args.deeplift_sample_size), replace=False), :]
 
                 shap_values = e.shap_values(x_test_sample)
 
@@ -279,14 +278,13 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
 
                 # Just to compare what global features SHAP with DeepLift choose
                 X_train_ori =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)
-                show_image([X_train_ori[:,100],X_train_ori[:,200],X_train_ori[:,300]],S_hat[0:len(S)], (args.algo+str(i)))
+                show_image([X_train_ori[:,1],X_train_ori[:,20],X_train_ori[:,30]],S_hat[0:len(S)], (args.algo+str(i)))
                 
                 #show_image(x_train[1,:].flatten(),x_train[20,:].flatten(),x_train[30,:].flatten(),S_hat, (args.algo+str(i)))
 
                 # Mean squared errors
-                model_msfe[0,i] = compute_mse(y_train, model.predict(x_train).reshape(y_train.shape))
-                model_mspe[0,i] = compute_mse(y_test, model.predict(x_test).reshape(y_test.shape))
-
+                model_msfe[0,i] = compute_mse(T_train, model.predict(X_train).reshape(T_train.shape))
+                model_mspe[0,i] = compute_mse(T_test, model.predict(X_test).reshape(T_test.shape))
 
                 # Selection rate errors
                 model_fpsr[0,i] = FPSR(S,S_hat[0:len(S)])
@@ -295,14 +293,23 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
                 model_card[0,i] = len(S_hat)
 
                 # Normalized Error (NME)
-                model_nme [0,i] = compute_nme(model.predict(x_test).reshape(y_test.shape), y_test)
-
+                model_nme [0,i] = compute_nme(model.predict(X_test).reshape(T_test.shape), T_test)
 
                 print ("Time taken for this MC iteration: ", time.time() - start_time)
             log_params = True
 
         elif args.algo=="BART-20":
-            pass
+            from xbart import XBART
+
+            T_train = np.asarray([np.argmax(t, axis=None, out=None) for t in T_train])/10.0
+            X_train = pd.DataFrame(X_train)
+            X_test = pd.DataFrame(X_test)
+
+            xbt = XBART(num_trees = 100, num_sweeps = 40, burnin = 15)
+            xbt.fit(X_train,T_train)
+            xbart_yhat_matrix = xbt.predict(X_test)  # Return n X num_sweeps matrix
+            y_hat = xbart_yhat_matrix[:,15:].mean(axis=1) # Use mean a prediction estimate
+
 
         elif args.algo=="BART-30":
             pass
@@ -311,6 +318,7 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
             pass
 
         elif args.algo=="SPINN":
+            # https://github.com/jjfeng/spinn
             pass
 
         elif args.algo=="GAM":
@@ -338,17 +346,7 @@ if __name__ == '__main__':
 
 '''
     if args.algo=="XBART":
-        from xbart import XBART
-
-        y_train = np.asarray([np.argmax(t, axis=None, out=None) for t in T_train])/10.0
-        x_train = pd.DataFrame(X_train)
-        x_test = pd.DataFrame(X_test)
-
-        xbt = XBART(num_trees = 100, num_sweeps = 40, burnin = 15)
-        xbt.fit(x_train,y_train)
-        xbart_yhat_matrix = xbt.predict(x_test)  # Return n X num_sweeps matrix
-        y_hat = xbart_yhat_matrix[:,15:].mean(axis=1) # Use mean a prediction estimate
-
+        
     if args.algo=="BART":
 
         # bart = SklearnModel(n_trees=20, store_in_sample_predictions=False, n_jobs=1) # Use default parameters
