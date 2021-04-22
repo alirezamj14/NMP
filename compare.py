@@ -17,11 +17,13 @@ import tensorflow as tf
 from tensorflow.keras import layers
 import shap
 from xbart import XBART
+from pygam import GAM, s, te
+
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run NMP")
     parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
-    parser.add_argument("--algo", default="BART", help="The algorithm used for feature selection")
+    parser.add_argument("--algo", default="GAM", help="The algorithm used for feature selection")
     parser.add_argument("--tree_size", default="20", help="The number of trees used in BART or RF")
     parser.add_argument("--MC_Num", default="10", help="The number of MC simulations done")
     parser.add_argument("--deeplift_sample_size", default="1000", help="The number of samples chosen from deeplift for explaining in each MC simulation")
@@ -46,7 +48,7 @@ def prepare_data(args):
                     
         if args.algo=="RF":
             return indices['sorted_ind'][:300], X_train.T[:10000], X_test.T[:3000], T_train.T[:10000], T_test.T[:3000]
-        elif args.algo=="BART":
+        elif args.algo=="BART" or args.algo=="GAM":
             T_train = np.asarray([np.argmax(t, axis=None, out=None) for t in T_train.T])/10.0
             T_test = np.asarray([np.argmax(t, axis=None, out=None) for t in T_test.T])/10.0
             return indices['sorted_ind'][:300], X_train.T, X_test.T, T_train, T_test
@@ -309,13 +311,23 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
 
                 log_params = True
 
+            elif args.algo=="GAM": # Note GAM doesn't work on MNIST properly
+                file_path = file_path_prefix + args.data + "/" + args.algo + "-" + str(i) + ".joblib"
+                
+                gam_fn_form = s(0, n_splines=5)
+                for feature in range(1, X_train.shape[1]):
+                    gam_fn_form += s(feature, n_splines=5)
+                # Regression in GAM
+                # https://pygam.readthedocs.io/en/latest/notebooks/tour_of_pygam.html#Regression
+                model = GAM(gam_fn_form, distribution='normal', link='log', max_iter=10, tol=0.001)
+                model = create_model(args, file_path, model, X_train, T_train)
+                
+                S_hat = np.argsort(model.statistics_['p_values'])
+                
+                log_params = True
+
             elif args.algo=="SPINN":
                 # https://github.com/jjfeng/spinn
-                log_params = False
-                print ("Not yet implemented!")
-                break
-
-            elif args.algo=="GAM":
                 log_params = False
                 print ("Not yet implemented!")
                 break

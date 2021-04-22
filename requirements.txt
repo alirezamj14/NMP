@@ -2,4 +2,10 @@ python 3.7
 numpy
 matplotlib
 tensorflow==2.1.2
-
+shap
+xbart
+pandas
+scipy
+joblib
+scikit-learn
+pygam
