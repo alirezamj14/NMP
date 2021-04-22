@@ -4,6 +4,31 @@ import numpy as np
 from MyFunctions import relu
 from scipy.io import loadmat
 
+def prepare_artificial():
+    # Articial model from paper http://proceedings.mlr.press/v80/ye18b.html
+
+    N = 600             # Number of samples  
+    Ntr = 300           # Number of training samples 
+    P = 5               # Number of input features
+    PExtra=495          # Number of extra random features
+    e = np.random.randn(1, N)
+    Z = np.random.randn(P+PExtra, N)
+    X = (Z + e)/2
+    epsilon = np.random.randn(1, 1)
+
+    X_train = X[:,:Ntr]
+    X_test = X[:,Ntr:]
+
+    T_train = (10 * np.sin(np.maximum(X_train[0,:], X_train[1,:])) + (np.maximum(np.maximum(X_train[2,:], X_train[3,:]), X_train[4,:]))**3 )/( 1 + (X_train[0,:] + X_train[4,:])**2 ) \
+            + np.sin(0.5 * X_train[2,:]) * (1 + np.exp(X_train[3,:] - 0.5 * X_train[2,:])) \
+            + X_train[2,:]**2 + 2 * np.sin(X_train[3,:]) + 2 * X_train[4,:] + epsilon
+
+    T_test = (10 * np.sin(np.maximum(X_test[0,:], X_test[1,:])) + (np.maximum(np.maximum(X_test[2,:], X_test[3,:]), X_test[4,:]))**3 )/( 1 + (X_test[0,:] + X_test[4,:])**2 ) \
+            + np.sin(0.5 * X_test[2,:]) * (1 + np.exp(X_test[3,:] - 0.5 * X_test[2,:])) \
+            + X_test[2,:]**2 + 2 * np.sin(X_test[3,:]) + 2 * X_test[4,:] + epsilon
+    
+    return X_train, X_test, T_train, T_test
+
 def prepare_NN():
     # Ohm's law: https://en.wikipedia.org/wiki/Ohm%27s_law
 
@@ -20,7 +45,7 @@ def prepare_NN():
     T_train = np.dot(W2 , relu(np.dot(W1, X_train)))
     T_test = np.dot(W2 , relu(np.dot(W1, X_test)))
     return X_train, X_test, T_train, T_test
-
+    
 
 def prepare_Ohm():
     # Ohm's law: https://en.wikipedia.org/wiki/Ohm%27s_law

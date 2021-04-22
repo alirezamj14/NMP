@@ -40,6 +40,8 @@ def define_dataset(args):
         X_train, X_test, T_train,  T_test  = prepare_Ohm()
     elif args.data == "NN":
         X_train, X_test, T_train,  T_test  = prepare_NN()
+    elif args.data == "artificial":
+        X_train, X_test, T_train,  T_test  = prepare_artificial()
     return X_train, X_test, T_train, T_test
 
 def set_hparameters(args):
@@ -542,8 +544,8 @@ def main():
     # plot_MNIST(_logger,args)
     # my_plot(_logger,args)
 
-def NMP(X_train, X_test, T_train, T_test):
-    args = define_parser()
+def NMP_train(X_train, X_test, T_train, T_test, args):
+    # args = define_parser()
 
     sorted_ind = Err_vs_feat(args)
     # acc_vs_J(_logger,args)
