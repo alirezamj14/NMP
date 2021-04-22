@@ -22,8 +22,8 @@ from pygam import GAM, s, te
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run NMP")
-    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
-    parser.add_argument("--algo", default="GAM", help="The algorithm used for feature selection")
+    parser.add_argument("--data", default="ARTIFICIAL", help="Input dataset available as the paper shows")
+    parser.add_argument("--algo", default="RF", help="The algorithm used for feature selection")
     parser.add_argument("--tree_size", default="20", help="The number of trees used in BART or RF")
     parser.add_argument("--MC_Num", default="10", help="The number of MC simulations done")
     parser.add_argument("--deeplift_sample_size", default="1000", help="The number of samples chosen from deeplift for explaining in each MC simulation")
@@ -69,6 +69,34 @@ def prepare_data(args):
         X_test = np.concatenate((m1[:,Ntr:], m2[:,Ntr:], r[:,Ntr:], 10*np.random.rand(fExtra,N-Ntr)+10), axis=0)
         T_test=F[:,Ntr:]
         
+        if args.algo=="BART":
+            return S, X_train.T, X_test.T, T_train.T.flatten(), T_test.T.flatten()
+        else:
+            return S, X_train.T, X_test.T, T_train.T, T_test.T
+
+    if args.data=="ARTIFICIAL":
+        # Articial model from paper http://proceedings.mlr.press/v80/ye18b.html
+
+        N = 600             # Number of samples  
+        Ntr = 300           # Number of training samples 
+        P = 5               # Number of input features
+        PExtra=495          # Number of extra random features
+        e = np.random.randn(1, N)
+        Z = np.random.randn(P+PExtra, N)
+        X = (Z + e)/2
+        epsilon = np.random.randn(1, 1)
+        S = [0, 1, 2, 3, 4]
+        X_train = X[:,:Ntr]
+        X_test = X[:,Ntr:]
+
+        T_train = (10 * np.sin(np.maximum(X_train[0,:], X_train[1,:])) + (np.maximum(np.maximum(X_train[2,:], X_train[3,:]), X_train[4,:]))**3 )/( 1 + (X_train[0,:] + X_train[4,:])**2 ) \
+                + np.sin(0.5 * X_train[2,:]) * (1 + np.exp(X_train[3,:] - 0.5 * X_train[2,:])) \
+                + X_train[2,:]**2 + 2 * np.sin(X_train[3,:]) + 2 * X_train[4,:] + epsilon
+
+        T_test = (10 * np.sin(np.maximum(X_test[0,:], X_test[1,:])) + (np.maximum(np.maximum(X_test[2,:], X_test[3,:]), X_test[4,:]))**3 )/( 1 + (X_test[0,:] + X_test[4,:])**2 ) \
+                + np.sin(0.5 * X_test[2,:]) * (1 + np.exp(X_test[3,:] - 0.5 * X_test[2,:])) \
+                + X_test[2,:]**2 + 2 * np.sin(X_test[3,:]) + 2 * X_test[4,:] + epsilon
+
         if args.algo=="BART":
             return S, X_train.T, X_test.T, T_train.T.flatten(), T_test.T.flatten()
         else:
@@ -193,8 +221,8 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
     model_msfe = np.zeros((1, int(args.MC_Num)))
     model_mspe = np.zeros((1, int(args.MC_Num)))
     model_card = np.zeros((1, int(args.MC_Num)))
-    model_nme_train  = np.zeros((1, int(args.MC_Num)))
-    model_nme_test   = np.zeros((1, int(args.MC_Num)))
+    model_nme_train = np.zeros((1, int(args.MC_Num)))
+    model_nme_test  = np.zeros((1, int(args.MC_Num)))
     
     if (os.path.isfile(parameter_file)):
         print ("--- Loading from the parameters ---", args.algo, "on", args.data)
@@ -319,7 +347,7 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
                     gam_fn_form += s(feature, n_splines=5)
                 # Regression in GAM
                 # https://pygam.readthedocs.io/en/latest/notebooks/tour_of_pygam.html#Regression
-                model = GAM(gam_fn_form, distribution='normal', link='log', max_iter=10, tol=0.001)
+                model = GAM(gam_fn_form, distribution='normal', link='identity', max_iter=10, tol=0.001)
                 model = create_model(args, file_path, model, X_train, T_train)
                 
                 S_hat = np.argsort(model.statistics_['p_values'])
