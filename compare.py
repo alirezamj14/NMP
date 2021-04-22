@@ -85,8 +85,10 @@ def load_parameters(parameter_file):
         model_std_msfe, \
         model_avg_mspe, \
         model_std_mspe, \
-        model_avg_nme, \
-        model_std_nme = pickle.load(f)
+        model_avg_train_nme, \
+        model_std_train_nme, \
+        model_avg_test_nme, \
+        model_std_test_nme = pickle.load(f)
 
     print ("Cardinality - Mean", model_avg_card) 
     print ("Cardinality - Std", model_std_card) 
@@ -98,10 +100,12 @@ def load_parameters(parameter_file):
     print ("MSFE (Fitting error) - Std", model_std_msfe) 
     print ("MSPE (Prediction error) - Mean", model_avg_mspe) 
     print ("MSPE (Prediction error) - Std", model_std_mspe)
-    print ("NME  - Mean", model_avg_nme)
-    print ("NME  - Std", model_std_nme)
+    print ("NME (Training) - Mean", model_avg_train_nme)
+    print ("NME (Training) - Std", model_std_train_nme)
+    print ("NME (Testing) - Mean", model_avg_test_nme)
+    print ("NME (Testing) - Std", model_std_test_nme)
 
-def save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe, model_card, model_nme):
+def save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe, model_card, model_nme_train, model_nme_test):
     model_avg_fpsr = np.mean(model_fpsr)
     model_std_fpsr = np.std(model_fpsr)
     
@@ -117,8 +121,11 @@ def save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_ms
     model_avg_card = np.mean(model_card)
     model_std_card = np.std(model_card)
 
-    model_avg_nme = np.mean(model_nme)
-    model_std_nme = np.std(model_nme)
+    model_avg_train_nme = np.mean(model_nme_train) 
+    model_std_train_nme = np.std(model_nme_train)
+
+    model_avg_test_nme = np.mean(model_nme_test) 
+    model_std_test_nme = np.std(model_nme_test)
     
     print ("Cardinality - Mean", model_avg_card) 
     print ("Cardinality - Std", model_std_card) 
@@ -130,8 +137,10 @@ def save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_ms
     print ("MSFE (Fitting error) - Std", model_std_msfe) 
     print ("MSPE (Prediction error) - Mean", model_avg_mspe) 
     print ("MSPE (Prediction error) - Std", model_std_mspe)
-    print ("NME  - Mean", model_avg_nme)
-    print ("NME  - Std", model_std_nme)
+    print ("NME (Training) - Mean", model_avg_train_nme)
+    print ("NME (Training) - Std", model_std_train_nme)
+    print ("NME (Testing) - Mean", model_avg_test_nme)
+    print ("NME (Testing) - Std", model_std_test_nme)
 
     pickle.dump([model_avg_card,
                 model_std_card,
@@ -143,8 +152,10 @@ def save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_ms
                 model_std_msfe,
                 model_avg_mspe,
                 model_std_mspe,
-                model_avg_nme,
-                model_std_nme], open(parameter_file, "wb"))
+                model_avg_train_nme,
+                model_std_train_nme,
+                model_avg_test_nme,
+                model_std_test_nme], open(parameter_file, "wb"))
 
 def create_model(args, file_path, model, X_train, T_train):
     if (os.path.exists(file_path)):
@@ -180,7 +191,8 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
     model_msfe = np.zeros((1, int(args.MC_Num)))
     model_mspe = np.zeros((1, int(args.MC_Num)))
     model_card = np.zeros((1, int(args.MC_Num)))
-    model_nme  = np.zeros((1, int(args.MC_Num)))
+    model_nme_train  = np.zeros((1, int(args.MC_Num)))
+    model_nme_test   = np.zeros((1, int(args.MC_Num)))
     
     if (os.path.isfile(parameter_file)):
         print ("--- Loading from the parameters ---", args.algo, "on", args.data)
@@ -285,7 +297,7 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
 
                 file_path = file_path_prefix + args.data + "/" + args.algo + str(args.tree_size) + "-" + str(i) + ".joblib"
 
-                model = XBART(num_trees = 20, num_sweeps = 20, burnin = 15, verbose = True, parallel = True)
+                model = XBART(num_trees = int(args.tree_size), num_sweeps = 20, burnin = 15, verbose = True, parallel = True)
                 model = create_model(args, file_path, model, X_train, T_train)
                 
                 S_hat = sorted(model.importance, key=model.importance.get)[::-1]
@@ -322,9 +334,10 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
                 # Cardinality of the model
                 model_card[0,i] = len(S_hat)
                 # Normalized Error (NME)
-                model_nme[0,i] = compute_nme(model.predict(X_test).reshape(T_test.shape), T_test)
+                model_nme_train[0,i] = compute_nme(model.predict(X_train).reshape(T_train.shape), T_train)
+                model_nme_test[0,i] = compute_nme(model.predict(X_test).reshape(T_test.shape), T_test)
 
-                save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe, model_card, model_nme)
+                save_parameters(parameter_file, model_fpsr, model_fnsr, model_msfe, model_mspe, model_card, model_nme_train, model_nme_test)
             
             print ("Time taken for this MC iteration: ", time.time() - start_time)
 
