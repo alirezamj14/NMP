@@ -19,6 +19,7 @@ def define_parser():
     parser.add_argument("--LayerNum", type=int, default=1, help="Parameter for ADMM")
     parser.add_argument("--J", type=int, default=1000, help="Sample Size")
     parser.add_argument("--Pextra", type=int, default=0, help="Number of extra random features")
+    parser.add_argument("--eta", type=float, default=0.06, help="Stopping criterion for NMP")
     args = parser.parse_args()
     return args
 
@@ -61,13 +62,13 @@ def main():
     for i in np.arange(0,MC_Num):
         X_train, X_test, T_train, T_test = define_dataset(args)
         S_hat = NMP_train(X_train, X_test, T_train, T_test, args) # set of selected features  
-        print(S_hat)
+        # print(S_hat)
 
-        NMP_FPSR[0,i] = FPSR(S,S_hat[0:len(S)])
-        NMP_FNSR[0,i] = FNSR(S,S_hat[0:len(S)])
+        NMP_FPSR[0,i] = FPSR(S,S_hat)
+        NMP_FNSR[0,i] = FNSR(S,S_hat)
 
-        print(NMP_FPSR)
-        print(NMP_FNSR)
+        # print(NMP_FPSR)
+        # print(NMP_FNSR)
 
     NMP_avg_FPSR = np.mean(NMP_FPSR)
     NMP_avg_FNSR = np.mean(NMP_FNSR)

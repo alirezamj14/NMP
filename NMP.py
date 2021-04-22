@@ -114,6 +114,8 @@ def Err_vs_feat(args):
     """
     SSFN_hparameters = set_hparameters(args)
 
+    eta = args.eta
+
     J = SSFN_hparameters["J"]
     Pextra = SSFN_hparameters["Pextra"]
     data = SSFN_hparameters["data"]
@@ -121,10 +123,10 @@ def Err_vs_feat(args):
     NodeNum = SSFN_hparameters["NodeNum"]
 
     X_train, X_test, T_train, T_test = define_dataset(args)
-    X_train = X_train[:,:int(round(0.9*J))] 
-    T_train = T_train[:,:int(round(0.9*J))]
-    X_test = X_test[:,:int(round(0.1*J))] 
-    T_test = T_test[:,:int(round(0.1*J))]
+    # X_train = X_train[:,:int(round(0.9*J))] 
+    # T_train = T_train[:,:int(round(0.9*J))]
+    # X_test = X_test[:,:int(round(0.1*J))] 
+    # T_test = T_test[:,:int(round(0.1*J))]
 
     Ntr = X_train.shape[1]
     Nts = X_test.shape[1]
@@ -177,6 +179,10 @@ def Err_vs_feat(args):
         else:
             i = np.argmin(test_error_array)
 
+        if len(test_error_sorted) > 1:
+            if np.abs(test_error_array[i] - test_error_sorted[-1])/np.abs(test_error_sorted[-1]) < eta or np.abs(test_error_array[i]) <= np.abs(test_error_sorted[-1]):
+                break
+
         best_ind = search_ind[i]
         train_error_sorted = np.append(train_error_sorted, train_error_array[i])
         test_error_sorted = np.append(test_error_sorted, test_error_array[i])
@@ -184,6 +190,7 @@ def Err_vs_feat(args):
         test_acc_sorted = np.append(test_acc_sorted, test_acc_array[i])
         sorted_ind = np.append(sorted_ind, best_ind)
         search_ind = np.delete(search_ind, i)
+    
         # print(sorted_ind)
         # print(str(round(len(sorted_ind)/P * 100,2))+"%")
 
@@ -203,8 +210,8 @@ def Err_vs_feat(args):
     FontSize = 18
     csfont = {'fontname':'sans-serif'}
     plt.subplots()
-    plt.plot(np.arange(1,P+1), test_error_sorted, 'r-', label="Test", linewidth=3)
-    plt.plot(np.arange(1,P+1), train_error_sorted, 'b-', label="Train", linewidth=2)
+    plt.plot(np.arange(1,len(test_error_sorted)+1), test_error_sorted, 'r-', label="Test", linewidth=3)
+    plt.plot(np.arange(1,len(test_error_sorted)+1), train_error_sorted, 'b-', label="Train", linewidth=2)
     plt.legend(loc='best', fontsize=FontSize)
     plt.grid()
     plt.xlabel("Number of input features",fontdict=csfont, fontsize=FontSize)
