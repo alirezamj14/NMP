@@ -19,6 +19,50 @@ import shap
 from xbart import XBART
 from pygam import GAM, s, te
 
+class CNNModel:
+    def __init__(self, num_classes=10, input_shape=(28, 28, 1)):
+        self.num_classes = num_classes
+        self.input_shape = input_shape
+
+    def create_cnn_model(self):
+        model = tf.keras.Sequential(
+            [
+                tf.keras.Input(shape=self.input_shape),
+                layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
+                layers.MaxPooling2D(pool_size=(2, 2)),
+                layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
+                layers.MaxPooling2D(pool_size=(2, 2)),
+                layers.Flatten(),
+                layers.Dropout(0.5),
+                layers.Dense(self.num_classes, activation="softmax"),
+            ]
+        )
+        return model
+
+    def run_cnn_inference(self, X_train, T_train, X_test, T_test):
+        """
+            X_train ([float]): [The matrix of training data. Each row contains one sample.]
+            X_test ([float]): [The matrix of testing data. Each row contains one sample.]
+            T_train ([float]): [The matrix of training target. Each row contains one sample.]
+            T_test ([float]): [The matrix of testing target. Each row contains one sample.]
+        """
+        # Make sure images have shape (28, 28, 1)
+        X_train = X_train.reshape(X_train.shape[0], 28, 28)
+        X_test = X_test.reshape(X_test.shape[0], 28, 28)
+        X_train = np.expand_dims(X_train, -1)
+        X_test = np.expand_dims(X_test, -1)
+        
+        model = self.create_cnn_model()
+        model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+        model.fit(X_train, T_train, epochs=3, batch_size=128)
+        # Sanity checks
+        score_train = model.evaluate(X_train, T_train, verbose=0)
+        score_test = model.evaluate(X_test, T_test, verbose=0)
+        print("Test loss:", score_test[0])
+        print("Test accuracy:", score_test[1])
+        t_hat_test = model.predict(X_test).reshape(T_test.shape)
+        t_hat = model.predict(X_train).reshape(T_train.shape)
+        return compute_nme(T_train,t_hat), compute_nme(T_test,t_hat_test),calculate_accuracy(T_train.T,t_hat.T), calculate_accuracy(T_test.T,t_hat_test.T)
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run NMP")
@@ -32,10 +76,10 @@ def define_parser():
 
 def prepare_data(args):
     """
-        X_train ([float]): [The matrix of training data. Each column contains one sample.]
-        X_test ([float]): [The matrix of testing data. Each column contains one sample.]
-        T_train ([float]): [The matrix of training target. Each column contains one sample.]
-        T_test ([float]): [The matrix of testing target. Each column contains one sample.]
+        X_train ([float]): [The matrix of training data. Each row contains one sample.]
+        X_test ([float]): [The matrix of testing data. Each row contains one sample.]
+        T_train ([float]): [The matrix of training target. Each row contains one sample.]
+        T_test ([float]): [The matrix of testing target. Each row contains one sample.]
     """
     if args.data=="MNIST":
         X_train =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)
@@ -246,11 +290,6 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
             elif args.algo == "DEEPLIFT": 
                 # Implemented using DeepExplain in SHAP: https://github.com/slundberg/shap
                 #-------------------------------------------------------------------------#
-                
-                # Model / data parameters
-                num_classes = 10
-                input_shape = (28, 28, 1)
-
                 X_train = X_train.reshape(X_train.shape[0], 28, 28)
                 X_test = X_test.reshape(X_test.shape[0], 28, 28)
                 # Make sure images have shape (28, 28, 1)
@@ -260,22 +299,14 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test):
                 print(X_train.shape[0], "train samples")
                 print(X_test.shape[0], "test samples")
 
+                # Model / data parameters
+                num_classes = 10
+                input_shape = (28, 28, 1)
                 """
                 ## Build the model
                 """
 
-                model = tf.keras.Sequential(
-                    [
-                        tf.keras.Input(shape=input_shape),
-                        layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
-                        layers.MaxPooling2D(pool_size=(2, 2)),
-                        layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
-                        layers.MaxPooling2D(pool_size=(2, 2)),
-                        layers.Flatten(),
-                        layers.Dropout(0.5),
-                        layers.Dense(num_classes, activation="softmax"),
-                    ]
-                )
+                model = CNNModel(num_classes, input_shape).create_cnn_model()
                 model.summary()
                         
                 file_path = file_path_prefix + args.data + "/" + args.algo + "-" + str(i) + ".h5"

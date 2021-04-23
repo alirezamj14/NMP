@@ -10,3 +10,4 @@ __pycache__/load_dataset.cpython-37.pyc
 __pycache__/MyOptimizers.cpython-37.pyc
 __pycache__/MyFunctions.cpython-37.pyc
 .vscode
+.history/
