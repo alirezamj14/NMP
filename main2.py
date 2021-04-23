@@ -53,29 +53,55 @@ def main():
     X_train, X_test, T_train, T_test = define_dataset(args)
     _logger.info("The dataset we use is {}".format(args.data))
 
-    S = [0, 1, 2, 3, 4] # set of true relevant features for gravitational law
+    S = [0, 1, 2, 3, 4] # set of true relevant features
+    sweep_eta = 0.01 * np.arange(1,11)
+
+    NMP_avg_FPSR = np.array([])
+    NMP_avg_FNSR = np.array([])    
 
     MC_Num=10
-    NMP_FPSR = np.zeros((1, MC_Num))
-    NMP_FNSR = np.zeros((1, MC_Num))
 
-    for i in np.arange(0,MC_Num):
-        X_train, X_test, T_train, T_test = define_dataset(args)
-        S_hat = NMP_train(X_train, X_test, T_train, T_test, args) # set of selected features  
-        # print(S_hat)
+    for eta in sweep_eta:
+        args.eta = eta
+        print("eta: "+ str(eta))
 
-        NMP_FPSR[0,i] = FPSR(S,S_hat)
-        NMP_FNSR[0,i] = FNSR(S,S_hat)
+        NMP_FPSR = np.zeros((1, MC_Num))
+        NMP_FNSR = np.zeros((1, MC_Num))
 
-        # print(NMP_FPSR)
-        # print(NMP_FNSR)
+        for i in np.arange(0,MC_Num):
+            # X_train, X_test, T_train, T_test = define_dataset(args)
+            S_hat = NMP_train(X_train, X_test, T_train, T_test, args)       # set of selected features  
+            # print(S_hat)
 
-    NMP_avg_FPSR = np.mean(NMP_FPSR)
-    NMP_avg_FNSR = np.mean(NMP_FNSR)
+            NMP_FPSR[0,i] = FPSR(S,S_hat)
+            NMP_FNSR[0,i] = FNSR(S,S_hat)
+
+            # print(NMP_FPSR)
+            # print(NMP_FNSR)
+
+        NMP_avg_FPSR = np.append(NMP_avg_FPSR, np.mean(NMP_FPSR))
+        NMP_avg_FNSR = np.append(NMP_avg_FNSR, np.mean(NMP_FNSR))
 
     print("Average FPSR of NMP: " + str(NMP_avg_FPSR))
     print("Average FNSR of NMP: " + str(NMP_avg_FNSR))
-            
+    
+    FontSize = 18
+    result_path = "./results/"
+    csfont = {'fontname':'sans-serif'}
+    plt.subplots()
+    plt.plot(sweep_eta, NMP_avg_FPSR, 'r-', label="FPSR", linewidth=3)
+    plt.plot(sweep_eta, NMP_avg_FNSR, 'b-', label="FNSR", linewidth=2)
+    plt.legend(loc='best', fontsize=FontSize)
+    plt.grid()
+    plt.xlabel("Stopping threshold (eta)",fontdict=csfont, fontsize=FontSize)
+    plt.ylabel("False selection rate",fontdict=csfont, fontsize=FontSize)
+    # plt.title(data+", SSFNN", loc='center', fontsize=FontSize)
+    plt.xticks(fontsize=FontSize)
+    plt.yticks(fontsize=FontSize)
+    plt.tight_layout()
+    plt.savefig(result_path +"FPSR_&_FNSR_vs_eta"+".png",dpi=600)
+    plt.close()
+
 
 if __name__ == '__main__':
     main()
