@@ -23,7 +23,7 @@ num_classes = 10
 input_shape = (28, 28, 1)
 model = CNNModel(num_classes, input_shape)
 
-# Mask at a particular column for the training and test data
+# Mask at a particular row(feature) for the training and test data
 i = 94
 train_mask = np.zeros(X_train.shape)
 test_mask = np.zeros(X_test.shape)
