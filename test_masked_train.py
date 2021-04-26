@@ -60,10 +60,11 @@ def debug_filter(images, mask, rows=28, cols=28):
         plt.pause(0.01)
         plt.clf()
     
-def train_patched_data(X_train, T_train, X_test, T_test, all_idx, rows=28, cols=28, debug=False):
+def train_patched_data(X_train, T_train, X_test, T_test, all_idx, rows=28, cols=28, debug=False, train=False):
     train_len = X_train.shape[1]
     test_len = X_test.shape[1]
     
+    data = []
     # Since, stride = 0 and padding = 0, Row len = rows-2 and Col len = cols - 2
     for row in range(0,rows-2):
         for col in range(0,cols-2):
@@ -78,19 +79,25 @@ def train_patched_data(X_train, T_train, X_test, T_test, all_idx, rows=28, cols=
             if debug == True:
                 debug_filter(X_train, train_mask, rows=28, cols=28)
             
-            # Check if at least one element is other than zero, maybe define more efficient ways to skip arbitrary training
-            if np.sum(curr_x_train) > 0.0:
-                print("******The sum of the elements in the patch is: ", np.sum(curr_x_train))
-                # Now train SSFN with NMP here
+            data.append(np.sum(curr_x_train))
+            
+            if train == True: 
+                # Check if at least one element is other than zero, maybe define more efficient ways to skip arbitrary training
+                # Check the distribution of the sum of pathches. Based on that the threshold is decided to choose around 300 features
+                if np.sum(curr_x_train)/train_len > 2.0:
+                    print("******The sum of the elements in the patch is: ", np.sum(curr_x_train))
+                    # Now train SSFN with NMP here
 
-                # CNN model example
-                num_classes = 10
-                input_shape = (28, 28, 1)
-                model = CNNModel(num_classes, input_shape)
-                print(model.run_cnn_inference(curr_x_train.T, T_train.T, curr_x_test.T, T_test.T))
-            else:
-                print("All elements in training are zero....skipping training!")
-
+                    # CNN model example
+                    num_classes = 10
+                    input_shape = (28, 28, 1)
+                    model = CNNModel(num_classes, input_shape)
+                    print(model.run_cnn_inference(curr_x_train.T, T_train.T, curr_x_test.T, T_test.T))
+                else:
+                    print("Elements sum in training patch is less than threshold....skipping training!")
+            
+    plt.plot(np.array(data)/train_len)
+    plt.show()
 
 X_train =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)
 X_test =  loadmat("./mat_files/MNIST.mat")["test_x"].astype(np.float32)
@@ -103,6 +110,6 @@ input_shape = (28, 28, 1)
 # All flattened masks indices
 all_idx = patch_filter_indices(rows=28, cols=28, radius=3)
 
-# Selected only 100 train images. For this the train data size will expand to 26x26x100 in each feature patch selector
-train_size = 100
-train_patched_data (X_train[:,0:train_size], T_train[:,0:train_size], X_test, T_test, all_idx, debug=True)
+# Selected only 10000 train images. For this the train data size will expand to 26x26x10000 in each feature patch selector
+train_size = 10000
+train_patched_data (X_train[:,0:train_size], T_train[:,0:train_size], X_test, T_test, all_idx, debug=True, train=False)
