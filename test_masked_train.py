@@ -44,7 +44,7 @@ def debug_filter(images, mask, rows=28, cols=28):
     for i in range(images.shape[1]):
         image = images[:,i]
         
-        overlay = np.zeros(image.shape)
+        overlay = np.zeros(mask[:,i].shape)
         feature_image = np.repeat(overlay[..., np.newaxis], 3, -1)
         feature_image[:,0] = mask[:,i]
         feature_image = np.reshape(feature_image,(rows,cols,3))
