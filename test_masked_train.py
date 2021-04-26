@@ -39,17 +39,18 @@ def patch_filter_indices(rows=28, cols=28, radius=3, pad_width=0):
     
     return all_idx
 
-def debug_filter(images, mask):
+def debug_filter(images, mask, rows=28, cols=28):
     
     for i in range(images.shape[1]):
         image = images[:,i]
+        
         overlay = np.zeros(image.shape)
         feature_image = np.repeat(overlay[..., np.newaxis], 3, -1)
         feature_image[:,0] = mask[:,i]
-        feature_image = np.reshape(feature_image,(28,28,3))
+        feature_image = np.reshape(feature_image,(rows,cols,3))
         feature_image = Image.fromarray((feature_image * 255).astype(np.uint8))
-        image_ = image.T
-        image_ = np.reshape(image_,(28,28))
+        
+        image_ = np.reshape(image,(rows,cols)).T
         image_ = Image.fromarray((image_ * 255).astype(np.uint8))
 
         plt.imshow(image_)
@@ -59,7 +60,7 @@ def debug_filter(images, mask):
         plt.pause(0.01)
         plt.clf()
     
-def train_patched_data(X_train, X_test, all_idx, rows=28, cols=28, debug=False):
+def train_patched_data(X_train, T_train, X_test, T_test, all_idx, rows=28, cols=28, debug=False):
     train_len = X_train.shape[1]
     test_len = X_test.shape[1]
     
@@ -75,9 +76,20 @@ def train_patched_data(X_train, X_test, all_idx, rows=28, cols=28, debug=False):
             curr_x_test = X_test*test_mask
 
             if debug == True:
-                debug_filter(X_train, train_mask)
+                debug_filter(X_train, train_mask, rows=28, cols=28)
             
-            # Now train SSFN with NMP here
+            # Check if at least one element is other than zero, maybe define more efficient ways to skip arbitrary training
+            if np.sum(curr_x_train) > 0.0:
+                print("******The sum of the elements in the patch is: ", np.sum(curr_x_train))
+                # Now train SSFN with NMP here
+
+                # CNN model example
+                num_classes = 10
+                input_shape = (28, 28, 1)
+                model = CNNModel(num_classes, input_shape)
+                print(model.run_cnn_inference(curr_x_train.T, T_train.T, curr_x_test.T, T_test.T))
+            else:
+                print("All elements in training are zero....skipping training!")
 
 
 X_train =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)
@@ -91,18 +103,6 @@ input_shape = (28, 28, 1)
 # All flattened masks indices
 all_idx = patch_filter_indices(rows=28, cols=28, radius=3)
 
-train_patched_data (X_train[:,1:3], X_test, all_idx, debug=True)
-
-'''
-model = CNNModel(num_classes, input_shape)
-# Mask at a particular row(feature) for the training and test data
-i = 94
-train_mask = np.zeros(X_train.shape)
-test_mask = np.zeros(X_test.shape)
-train_mask[i,:] = 1
-test_mask[i,:] = 1
-X_train = X_train*train_mask
-X_test = X_test*test_mask
-
-print(model.run_cnn_inference(X_train.T, T_train.T, X_test.T, T_test.T))
-'''
+# Selected only 100 train images. For this the train data size will expand to 26x26x100 in each feature patch selector
+train_size = 100
+train_patched_data (X_train[:,0:train_size], T_train[:,0:train_size], X_test, T_test, all_idx, debug=True)
