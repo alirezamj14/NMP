@@ -96,11 +96,10 @@ def train_patched_data(X_train, T_train, X_test, T_test, all_idx, radius=3, rows
                     print(model.run_cnn_inference(curr_x_train.T, T_train.T, curr_x_test.T, T_test.T))
                 else:
                     print("Elements sum in training patch is less than threshold....skipping training!")
-    avg = np.array(data)     
-    #plt.imshow(np.reshape(avg,(rows-2, cols-2)), cmap='viridis', interpolation='nearest')
+    avg = np.array(data)  
+    #plt.imshow(np.reshape(avg,(rows-radius+1, cols-radius+1)), cmap='viridis', interpolation='nearest')
     plt.plot(avg)
-    plt.show()
-
+    plt.show(block=True)
 
 def main():
     X_train =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)
@@ -110,14 +109,14 @@ def main():
 
     num_classes = 10
     input_shape = (28, 28, 1)
-    patch_size = 10
+    patch_size = 3
 
     # All flattened masks indices
     all_idx = patch_filter_indices(rows=28, cols=28, radius=patch_size)
 
     # Selected only 10000 train images. For this the train data size will expand to 26x26x10000 in each feature patch selector
     train_size = 10000
-    train_patched_data (X_train[:,0:train_size], T_train[:,0:train_size], X_test, T_test, all_idx, radius=patch_size, debug=False, train=False)
+    train_patched_data (X_train[:,0:train_size], T_train[:,0:train_size], X_test, T_test, all_idx, radius=patch_size, debug=True, train=False)
     
 if __name__ == '__main__':
     main()
