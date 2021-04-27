@@ -60,14 +60,14 @@ def debug_filter(images, mask, rows=28, cols=28):
         plt.pause(0.01)
         plt.clf()
     
-def train_patched_data(X_train, T_train, X_test, T_test, all_idx, rows=28, cols=28, debug=False, train=False):
+def train_patched_data(X_train, T_train, X_test, T_test, all_idx, radius=3, rows=28, cols=28, debug=False, train=False):
     train_len = X_train.shape[1]
     test_len = X_test.shape[1]
     
     data = []
     # Since, stride = 0 and padding = 0, Row len = rows-2 and Col len = cols - 2
-    for row in range(0,rows-2):
-        for col in range(0,cols-2):
+    for row in range(0,rows-radius+1):
+        for col in range(0,cols-radius+1):
             mask = np.zeros(rows*cols)
             mask[all_idx[row,col]] = 1
             train_mask = np.repeat(mask[..., np.newaxis],train_len, -1)
@@ -80,11 +80,12 @@ def train_patched_data(X_train, T_train, X_test, T_test, all_idx, rows=28, cols=
                 debug_filter(X_train, train_mask, rows=28, cols=28)
             
             # Book keeping for understanding the distribution of the weights
-            data.append(np.sum(curr_x_train))
+            normalized_avg_patch_sum = np.sum(curr_x_train)/(train_len*radius*radius)
+            data.append(normalized_avg_patch_sum)
             
             if train == True: 
                 # Check the distribution of the sum of pathches. Based on that the threshold is decided to choose around 300 features
-                if np.sum(curr_x_train)/train_len > 2.0:
+                if normalized_avg_patch_sum > 0.2:
                     print("******The sum of the elements in the patch is: ", np.sum(curr_x_train))
                     # Now train SSFN with NMP here
 
@@ -95,9 +96,9 @@ def train_patched_data(X_train, T_train, X_test, T_test, all_idx, rows=28, cols=
                     print(model.run_cnn_inference(curr_x_train.T, T_train.T, curr_x_test.T, T_test.T))
                 else:
                     print("Elements sum in training patch is less than threshold....skipping training!")
-    avg = np.array(data)/train_len     
-    plt.imshow(np.reshape(avg,(rows-2, cols-2)), cmap='viridis', interpolation='nearest')
-    # plt.plot(avg)
+    avg = np.array(data)     
+    #plt.imshow(np.reshape(avg,(rows-2, cols-2)), cmap='viridis', interpolation='nearest')
+    plt.plot(avg)
     plt.show()
 
 
@@ -109,13 +110,14 @@ def main():
 
     num_classes = 10
     input_shape = (28, 28, 1)
+    patch_size = 10
 
     # All flattened masks indices
-    all_idx = patch_filter_indices(rows=28, cols=28, radius=3)
+    all_idx = patch_filter_indices(rows=28, cols=28, radius=patch_size)
 
     # Selected only 10000 train images. For this the train data size will expand to 26x26x10000 in each feature patch selector
     train_size = 10000
-    train_patched_data (X_train[:,0:train_size], T_train[:,0:train_size], X_test, T_test, all_idx, debug=False, train=False)
+    train_patched_data (X_train[:,0:train_size], T_train[:,0:train_size], X_test, T_test, all_idx, radius=patch_size, debug=False, train=False)
     
 if __name__ == '__main__':
     main()
