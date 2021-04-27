@@ -54,7 +54,7 @@ def debug_filter(images, mask, rows=28, cols=28):
         image_ = Image.fromarray((image_ * 255).astype(np.uint8))
 
         plt.imshow(image_)
-        plt.imshow(feature_image, 'viridis', interpolation='nearest', alpha=0.6)
+        plt.imshow(feature_image, 'RdBu', interpolation='nearest', alpha=0.6)
         plt.ion() # turn on interactive mode
         plt.show()
         plt.pause(0.01)
@@ -79,10 +79,10 @@ def train_patched_data(X_train, T_train, X_test, T_test, all_idx, rows=28, cols=
             if debug == True:
                 debug_filter(X_train, train_mask, rows=28, cols=28)
             
+            # Book keeping for understanding the distribution of the weights
             data.append(np.sum(curr_x_train))
             
             if train == True: 
-                # Check if at least one element is other than zero, maybe define more efficient ways to skip arbitrary training
                 # Check the distribution of the sum of pathches. Based on that the threshold is decided to choose around 300 features
                 if np.sum(curr_x_train)/train_len > 2.0:
                     print("******The sum of the elements in the patch is: ", np.sum(curr_x_train))
@@ -95,21 +95,27 @@ def train_patched_data(X_train, T_train, X_test, T_test, all_idx, rows=28, cols=
                     print(model.run_cnn_inference(curr_x_train.T, T_train.T, curr_x_test.T, T_test.T))
                 else:
                     print("Elements sum in training patch is less than threshold....skipping training!")
-            
-    plt.plot(np.array(data)/train_len)
+    avg = np.array(data)/train_len     
+    plt.imshow(np.reshape(avg,(rows-2, cols-2)), cmap='viridis', interpolation='nearest')
+    # plt.plot(avg)
     plt.show()
 
-X_train =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)
-X_test =  loadmat("./mat_files/MNIST.mat")["test_x"].astype(np.float32)
-T_train =  loadmat("./mat_files/MNIST.mat")["train_y"].astype(np.float32)
-T_test =  loadmat("./mat_files/MNIST.mat")["test_y"].astype(np.float32)
 
-num_classes = 10
-input_shape = (28, 28, 1)
+def main():
+    X_train =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)
+    X_test =  loadmat("./mat_files/MNIST.mat")["test_x"].astype(np.float32)
+    T_train =  loadmat("./mat_files/MNIST.mat")["train_y"].astype(np.float32)
+    T_test =  loadmat("./mat_files/MNIST.mat")["test_y"].astype(np.float32)
 
-# All flattened masks indices
-all_idx = patch_filter_indices(rows=28, cols=28, radius=3)
+    num_classes = 10
+    input_shape = (28, 28, 1)
 
-# Selected only 10000 train images. For this the train data size will expand to 26x26x10000 in each feature patch selector
-train_size = 10000
-train_patched_data (X_train[:,0:train_size], T_train[:,0:train_size], X_test, T_test, all_idx, debug=True, train=False)
+    # All flattened masks indices
+    all_idx = patch_filter_indices(rows=28, cols=28, radius=3)
+
+    # Selected only 10000 train images. For this the train data size will expand to 26x26x10000 in each feature patch selector
+    train_size = 10000
+    train_patched_data (X_train[:,0:train_size], T_train[:,0:train_size], X_test, T_test, all_idx, debug=False, train=False)
+    
+if __name__ == '__main__':
+    main()
