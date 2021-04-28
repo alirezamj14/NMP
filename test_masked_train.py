@@ -11,10 +11,9 @@ import random
 import pandas as pd
 from MyFunctions import *
 from compare import *
-import tensorflow as tf
-from tensorflow.keras import layers
+import math
 
-def patch_filter_indices(rows=28, cols=28, radius=3, pad_width=0):
+def patch_filter_indices(rows=28, cols=28, radius=4, pad_width=0, stride=4):
     # padding the edges 
     # data = np.pad(data, mode='edge', pad_width=pad_width) # pad_width -> search radius
 
@@ -22,14 +21,14 @@ def patch_filter_indices(rows=28, cols=28, radius=3, pad_width=0):
     R = radius  # Radius
     M1 = rows
     N1 = cols
-    rowlen = N1 - R + 1
-    collen = M1 - R + 1
+    patch_x_moves = math.floor((N1 - R)/stride) + 1
+    patch_y_moves = math.floor((M1 - R)/stride) + 1
 
     # Linear indices for the starting R x R block
     idx1 = np.arange(R)[:,None]*N1 + np.arange(R)
 
     # Offset (from the starting block indices) linear indices for all the blocks
-    idx2 = np.arange(collen)[:,None]*N1 + np.arange(rowlen)
+    idx2 = np.arange(patch_y_moves)[:,None]*N1*stride + np.arange(patch_x_moves)*stride
 
     # Finally, get the linear indices for all blocks
     all_idx = idx1.ravel()[None,None,:] + idx2[:,:,None] 
@@ -60,14 +59,14 @@ def debug_filter(images, mask, rows=28, cols=28):
         plt.pause(0.01)
         plt.clf()
     
-def train_patched_data(X_train, T_train, X_test, T_test, all_idx, radius=3, rows=28, cols=28, debug=False, train=False):
+def train_patched_data(X_train, T_train, X_test, T_test, all_idx, radius=4, stride=4,rows=28, cols=28, debug=False, train=False):
     train_len = X_train.shape[1]
     test_len = X_test.shape[1]
     
     data = []
     # Since, stride = 0 and padding = 0, Row len = rows-2 and Col len = cols - 2
-    for row in range(0,rows-radius+1):
-        for col in range(0,cols-radius+1):
+    for row in range(0,math.floor((rows-radius)/stride+1)):
+        for col in range(0,math.floor((cols-radius)/stride+1)):
             mask = np.zeros(rows*cols)
             mask[all_idx[row,col]] = 1
             train_mask = np.repeat(mask[..., np.newaxis],train_len, -1)
@@ -85,7 +84,7 @@ def train_patched_data(X_train, T_train, X_test, T_test, all_idx, radius=3, rows
             
             if train == True: 
                 # Check the distribution of the sum of pathches. Based on that the threshold is decided to choose around 300 features
-                if normalized_avg_patch_sum > 0.2:
+                if normalized_avg_patch_sum > 0.05:
                     print("******The sum of the elements in the patch is: ", np.sum(curr_x_train))
                     # Now train SSFN with NMP here
 
@@ -109,14 +108,17 @@ def main():
 
     num_classes = 10
     input_shape = (28, 28, 1)
-    patch_size = 3
+    patch_size = 4
+    stride = 4
 
     # All flattened masks indices
-    all_idx = patch_filter_indices(rows=28, cols=28, radius=patch_size)
+    all_idx = patch_filter_indices(rows=28, cols=28, radius=patch_size, stride=stride)
 
-    # Selected only 10000 train images. For this the train data size will expand to 26x26x10000 in each feature patch selector
-    train_size = 10000
-    train_patched_data (X_train[:,0:train_size], T_train[:,0:train_size], X_test, T_test, all_idx, radius=patch_size, debug=True, train=False)
+    # Selected only 10 train images. For this the train data size will expand to patch_x_moves*patch_y_moves*10 in each feature patch selector
+    # patch_x_moves = math.floor((rows - patch_size)/stride) + 1
+    # patch_y_moves = math.floor((cols - patch_size)/stride) + 1
+    train_size = 10
+    train_patched_data (X_train[:,0:train_size], T_train[:,0:train_size], X_test, T_test, all_idx, radius=patch_size, stride=stride, debug=True, train=False)
     
 if __name__ == '__main__':
     main()
