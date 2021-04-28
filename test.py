@@ -80,15 +80,25 @@ X_train_ori =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)
 x = np.array([X_train_ori[:,100],
               X_train_ori[:,20000],
               X_train_ori[:,30000]])
-show_image(x, S_hat[0:50], "test_deeplift_50")
-show_image(x, S_hat[0:20], "test_deeplift_20")
+show_image(x, S_hat[0:300], "test_deeplift_300")
 
-
-#show_image(x, S_hat_bart_mnist[0:300], "test_bart")
+show_image(x, S_hat_bart_mnist[0:300], "test_bart_300")
 
 with open('./parameters/MNIST_sorted.pkl', 'rb') as f:
     indices = pickle.load(f)
 
 #show_image_old(x, indices['sorted_ind'], "test_nmp")
-show_image(x, indices['sorted_ind'][0:50], "test_nmp_50")
-show_image(x, indices['sorted_ind'][0:20], "test_nmp_20")
+
+rows = indices['sorted_ind_row']
+cols = indices['sorted_ind_col']
+
+S_hat = []
+patch_rows = 4
+patch_cols = 4
+for i in range(49):
+    for j in range(patch_rows):
+        for k in range(patch_cols):
+            S_hat.append((patch_rows*rows[i] + k-1)*28 + patch_cols*cols[i] + j%4) 
+
+show_image(x, S_hat[0:300], "test_nmp_300")
+
