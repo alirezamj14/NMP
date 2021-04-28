@@ -110,7 +110,6 @@ def return_patched_data(X_train, X_test, row_ind, col_ind, radius=3, rows=28, co
     train_len = X_train.shape[1]
     test_len = X_test.shape[1]
     
-    # Since, stride = 0 and padding = 0, Row len = rows-2 and Col len = cols - 2
     mask = np.zeros(rows*cols)
     mask[all_idx[row_ind,col_ind]] = 1
     train_mask = np.repeat(mask[..., np.newaxis],train_len, -1)
