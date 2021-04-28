@@ -64,7 +64,7 @@ def train_patched_data(X_train, T_train, X_test, T_test, all_idx, radius=4, stri
     test_len = X_test.shape[1]
     
     data = []
-    # Since, stride = 0 and padding = 0, Row len = rows-2 and Col len = cols - 2
+    # Since, padding = 0, Row len = math.floor((rows-radius)/stride+1) and Col len = math.floor((cols-radius)/stride+1)
     for row in range(0,math.floor((rows-radius)/stride+1)):
         for col in range(0,math.floor((cols-radius)/stride+1)):
             mask = np.zeros(rows*cols)
