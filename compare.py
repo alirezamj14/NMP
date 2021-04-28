@@ -15,9 +15,9 @@ import pandas as pd
 from MyFunctions import *
 import tensorflow as tf
 from tensorflow.keras import layers
-import shap
-from xbart import XBART
-from pygam import GAM, s, te
+# import shap
+# from xbart import XBART
+# from pygam import GAM, s, te
 
 class CNNModel:
     def __init__(self, num_classes=10, input_shape=(28, 28, 1)):

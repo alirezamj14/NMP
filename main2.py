@@ -4,6 +4,7 @@ import numpy as np
 from numpy import array
 from SSFN import SSFN
 from NMP import NMP_train
+from test_masked_train import return_patched_data
 from MyFunctions import *
 from load_dataset import *
 import multiprocessing
@@ -11,7 +12,7 @@ from joblib import Parallel, delayed
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run progressive learning")
-    parser.add_argument("--data", default="artificial", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
     parser.add_argument("--lam", type=float, default=10**(2), help="Reguralized parameters on the least-square problem")
     parser.add_argument("--mu", type=float, default=10**(3), help="Parameter for ADMM")
     parser.add_argument("--kMax", type=int, default=100, help="Iteration number of ADMM")

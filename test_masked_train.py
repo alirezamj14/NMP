@@ -10,7 +10,7 @@ from sklearn.pipeline import make_pipeline
 import random
 import pandas as pd
 from MyFunctions import *
-from compare import *
+# from compare import *
 import tensorflow as tf
 from tensorflow.keras import layers
 
@@ -92,14 +92,33 @@ def train_patched_data(X_train, T_train, X_test, T_test, all_idx, radius=3, rows
                     # CNN model example
                     num_classes = 10
                     input_shape = (28, 28, 1)
-                    model = CNNModel(num_classes, input_shape)
-                    print(model.run_cnn_inference(curr_x_train.T, T_train.T, curr_x_test.T, T_test.T))
+                    # model = CNNModel(num_classes, input_shape)
+                    # print(model.run_cnn_inference(curr_x_train.T, T_train.T, curr_x_test.T, T_test.T))
                 else:
                     print("Elements sum in training patch is less than threshold....skipping training!")
     avg = np.array(data)  
     #plt.imshow(np.reshape(avg,(rows-radius+1, cols-radius+1)), cmap='viridis', interpolation='nearest')
     plt.plot(avg)
     plt.show(block=True)
+
+def return_patched_data(X_train, X_test, row_ind, col_ind, radius=3, rows=28, cols=28):
+    patch_size = radius
+    # All flattened masks indices
+    all_idx = patch_filter_indices(rows=28, cols=28, radius=patch_size)
+
+    train_len = X_train.shape[1]
+    test_len = X_test.shape[1]
+    
+    # Since, stride = 0 and padding = 0, Row len = rows-2 and Col len = cols - 2
+    mask = np.zeros(rows*cols)
+    mask[all_idx[row_ind,col_ind]] = 1
+    train_mask = np.repeat(mask[..., np.newaxis],train_len, -1)
+    test_mask = np.repeat(mask[..., np.newaxis],test_len, -1)
+
+    curr_x_train = X_train*train_mask
+    curr_x_test = X_test*test_mask
+
+    return curr_x_train, curr_x_test
 
 def main():
     X_train =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)
