@@ -7,6 +7,7 @@ from MyFunctions import *
 from load_dataset import *
 import multiprocessing
 from joblib import Parallel, delayed
+from test_masked_train import return_patched_data
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run progressive learning")
@@ -105,6 +106,148 @@ def LookAhead(test_error_array, sorted_ind, search_ind, X_train, X_test, T_train
         LookAhead_ind = ind_array[1]
 
     return LookAhead_ind
+
+def Err_vs_feat_window(args):
+    """[This function plots training and testing error versus number of features |S| for an image dataset.]
+
+    Args:
+        args ([parser]): [It contains the inputs specifies by the user such as name of the dataset, and hyperparameters of the NN.]
+    """
+    SSFN_hparameters = set_hparameters(args)
+
+    eta = args.eta
+
+    J = SSFN_hparameters["J"]
+    Pextra = SSFN_hparameters["Pextra"]
+    data = SSFN_hparameters["data"]
+    LayerNum = SSFN_hparameters["LayerNum"]
+    NodeNum = SSFN_hparameters["NodeNum"]
+
+    X_train, X_test, T_train, T_test = define_dataset(args)
+    # X_train = X_train[:,:int(round(0.9*J))] 
+    # T_train = T_train[:,:int(round(0.9*J))]
+    # X_test = X_test[:,:int(round(0.1*J))] 
+    # T_test = T_test[:,:int(round(0.1*J))]
+
+    Ntr = X_train.shape[1]
+    Nts = X_test.shape[1]
+
+    if data!="MNIST":
+        X_train = np.concatenate((X_train, (10)*np.random.rand(Pextra,Ntr)+10), axis=0)
+        X_test = np.concatenate(( X_test, (10)*np.random.rand(Pextra,Nts)+10), axis=0)
+
+    if data=="MNIST":
+        X_train = 1 - X_train
+        X_test = 1 - X_test
+        
+    parameters_path = "./parameters/"
+    result_path = "./results/"
+    LA = "None"
+
+    # train_error, test_error = SSFN( X_train, X_test, T_train, T_test, SSFN_hparameters)
+    rows, cols, depth = (28, 28, 1)
+    radius = 3
+    search_ind_row = range(0, rows // radius)
+    search_ind_col = range(0, cols // radius)
+
+    P = X_train.shape[0]
+    train_error_sorted = np.array([])
+    test_error_sorted = np.array([])
+    train_acc_sorted = np.array([])
+    test_acc_sorted = np.array([])
+    sorted_ind_row = np.array([],  dtype=int)
+    sorted_ind_col = np.array([],  dtype=int)
+
+    while len(search_ind_row) + len(search_ind_col) > 2 :
+        train_error_array = np.array([])
+        test_error_array = np.array([])
+        train_acc_array = np.array([])
+        test_acc_array = np.array([])
+        for row in search_ind_row:
+            for col in search_ind_col:
+                if len(sorted_ind_row)>=1 and len(sorted_ind_col)>=1 :
+                    X_tr, X_ts = return_patched_data(X_train, X_test, np.append(sorted_ind_row,row), np.append(sorted_ind_col,col), radius=3, rows=28, cols=28)
+                elif len(sorted_ind_row)>=1 and len(sorted_ind_col)==0 :
+                    X_tr, X_ts = return_patched_data(X_train, X_test, np.append(sorted_ind_row,row), col, radius=3, rows=28, cols=28)
+                elif len(sorted_ind_row)>=0 and len(sorted_ind_col)==1 :
+                    X_tr, X_ts = return_patched_data(X_train, X_test, row, np.append(sorted_ind_col,col), radius=3, rows=28, cols=28)
+                else:
+                    X_tr, X_ts = return_patched_data(X_train, X_test, row, col, radius=3, rows=28, cols=28)
+                train_error, test_error, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+                train_error_array = np.append(train_error_array, train_error)
+                test_error_array = np.append(test_error_array, test_error)
+                train_acc_array = np.append(train_acc_array, train_acc)
+                test_acc_array = np.append(test_acc_array, test_acc)
+
+        i = np.argmin(test_error_array)
+        i_row = i // len(search_ind_row)
+        i_col = i % len(search_ind_row)
+
+        # if len(test_error_sorted) > 1:
+        #     if np.abs(test_error_array[i] - test_error_sorted[-1])/np.abs(test_error_sorted[-1]) < eta or np.abs(test_error_array[i]) <= np.abs(test_error_sorted[-1]):
+        #         break
+
+        best_ind_row = search_ind_row[i_row]
+        best_ind_col = search_ind_col[i_col]
+        train_error_sorted = np.append(train_error_sorted, train_error_array[i])
+        test_error_sorted = np.append(test_error_sorted, test_error_array[i])
+        train_acc_sorted = np.append(train_acc_sorted, train_acc_array[i])
+        test_acc_sorted = np.append(test_acc_sorted, test_acc_array[i])
+        sorted_ind_row = np.append(sorted_ind_row, best_ind_row)
+        search_ind_row = np.delete(search_ind_row, best_ind_row)
+        sorted_ind_col = np.append(sorted_ind_col, best_ind_col)
+        search_ind_col = np.delete(search_ind_col, best_ind_col)
+
+        print("rows: "+str(sorted_ind_row))
+        print("cols: "+str(sorted_ind_col))
+        # print(str(round(len(sorted_ind)/P * 100,2))+"%")
+
+    # MyFPSR = FPSR([0, 1, 2],sorted_ind[0:3]) 
+    # print("FPSR: " + str(MyFPSR))
+    # MyFNSR = FNSR([0, 1, 2],sorted_ind[0:3]) 
+    # print("FNSR: " + str(MyFNSR))
+
+    # output_dic = {}
+    # output_dic["sorted_ind"]=sorted_ind 
+    # output_dic["test_error_sorted"]=test_error_sorted 
+    # output_dic["train_error_sorted"]=train_error_sorted 
+    # output_dic["test_acc_sorted"]=test_acc_sorted 
+    # output_dic["train_acc_sorted"]=train_acc_sorted 
+    # save_dic(output_dic, parameters_path, data, "sorted")
+
+    FontSize = 18
+    csfont = {'fontname':'sans-serif'}
+    plt.subplots()
+    plt.plot(np.arange(1,len(test_error_sorted)+1), test_error_sorted, 'r-', label="Test", linewidth=3)
+    plt.plot(np.arange(1,len(test_error_sorted)+1), train_error_sorted, 'b-', label="Train", linewidth=2)
+    plt.legend(loc='best', fontsize=FontSize)
+    plt.grid()
+    plt.xlabel("Number of input features",fontdict=csfont, fontsize=FontSize)
+    plt.ylabel("Normalized error (dB)",fontdict=csfont, fontsize=FontSize)
+    # plt.title(data+", SSFNN", loc='center', fontsize=FontSize)
+    plt.xticks(fontsize=FontSize)
+    plt.yticks(fontsize=FontSize)
+    plt.tight_layout()
+    plt.savefig(result_path +"Err_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
+    plt.close()
+
+    # if data=="MNIST":
+    #     csfont = {'fontname':'sans-serif'}
+    #     plt.subplots()
+    #     plt.plot(np.arange(1,P+1), test_acc_sorted, 'r-', label="Test Accuracy", linewidth=2)
+    #     plt.plot(np.arange(1,P+1), train_acc_sorted, 'b-', label="Train Accuracy", linewidth=2)
+    #     plt.legend(loc='best')
+    #     plt.grid()
+    #     plt.xlabel("Number of input features",fontdict=csfont, fontsize=FontSize)
+    #     plt.ylabel("Classification accuracy",fontdict=csfont, fontsize=FontSize)
+    #     # plt.title(data+", SSFN", loc='center')
+    #     plt.xticks(fontsize=FontSize)
+    #     plt.yticks(fontsize=FontSize)
+    #     plt.tight_layout()
+    #     plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
+    #     plt.close()
+
+    return (sorted_ind_row,sorted_ind_col)
 
 def Err_vs_feat(args):
     """[This function plots training and testing error versus number of features |S|, refer to Figure 1 and 2 in the Overleaf.]
@@ -554,6 +697,7 @@ def main():
 def NMP_train(X_train, X_test, T_train, T_test, args):
     # args = define_parser()
 
+    sorted_ind = Err_vs_feat_window(args)
     sorted_ind = Err_vs_feat(args)
     # acc_vs_J(_logger,args)
     # acc_vs_P(_logger,args)
