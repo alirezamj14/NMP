@@ -146,7 +146,7 @@ def Err_vs_feat_window(args):
 
     # train_error, test_error = SSFN( X_train, X_test, T_train, T_test, SSFN_hparameters)
     rows, cols, depth = (28, 28, 1)
-    radius = 4
+    radius = 2
     R_num = rows // radius
     C_num = cols // radius
     search_ind = np.arange(R_num * C_num)
@@ -702,7 +702,7 @@ def main():
 def NMP_train(X_train, X_test, T_train, T_test, args):
     # args = define_parser()
 
-    sorted_ind = Err_vs_feat_window(args)
+    # sorted_ind = Err_vs_feat_window(args)
     sorted_ind = Err_vs_feat(args)
     # acc_vs_J(_logger,args)
     # acc_vs_P(_logger,args)

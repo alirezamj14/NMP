@@ -7,8 +7,8 @@ from scipy.io import loadmat
 def prepare_artificial():
     # Articial model from paper http://proceedings.mlr.press/v80/ye18b.html
 
-    N = 600             # Number of samples  
-    Ntr = 300           # Number of training samples 
+    N = 1300             # Number of samples  
+    Ntr = 1000           # Number of training samples 
     P = 5               # Number of input features
     PExtra=495          # Number of extra random features
     e = np.random.randn(1, N)

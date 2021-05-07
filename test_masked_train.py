@@ -105,7 +105,7 @@ def train_patched_data(X_train, T_train, X_test, T_test, all_idx, radius=4, stri
 def return_patched_data(X_train, X_test, row_ind, col_ind, radius=4, rows=28, cols=28):
     patch_size = radius
     # All flattened masks indices
-    all_idx = patch_filter_indices(rows, cols, radius=patch_size, pad_width=0, stride=4)
+    all_idx = patch_filter_indices(rows, cols, radius=patch_size, pad_width=0, stride=2)
 
     train_len = X_train.shape[1]
     test_len = X_test.shape[1]
