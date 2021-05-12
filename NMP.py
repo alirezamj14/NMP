@@ -3,6 +3,7 @@
 import logging 
 import argparse
 from SSFN import SSFN
+from MLP import MLP
 from MyFunctions import *
 from load_dataset import *
 import multiprocessing
@@ -313,7 +314,8 @@ def Err_vs_feat(args):
             else:
                 X_tr = X_train[[i],:]
                 X_ts = X_test[[i],:]
-            train_error, test_error, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+            # train_error, test_error, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+            train_error, test_error, train_acc, test_acc = MLP( X_tr, X_ts, T_train, T_test, data)
             train_error_array = np.append(train_error_array, train_error)
             test_error_array = np.append(test_error_array, test_error)
             train_acc_array = np.append(train_acc_array, train_acc)
@@ -339,7 +341,7 @@ def Err_vs_feat(args):
         sorted_ind = np.append(sorted_ind, best_ind)
         search_ind = np.delete(search_ind, i)
     
-        # print(sorted_ind)
+        print(sorted_ind)
         # print(str(round(len(sorted_ind)/P * 100,2))+"%")
 
     # MyFPSR = FPSR([0, 1, 2],sorted_ind[0:3]) 

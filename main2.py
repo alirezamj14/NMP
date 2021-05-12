@@ -56,12 +56,12 @@ def main():
 
     S = [0, 1, 2, 3, 4] # set of true relevant features
     sweep_eta = 0.01 * np.arange(1,11)
-    sweep_J = np.arange(50, 1050, 50)
+    sweep_J = 600 #np.arange(50, 1050, 50)
 
     NMP_avg_FPSR = np.array([])
     NMP_avg_FNSR = np.array([])    
 
-    MC_Num=5
+    MC_Num=10
 
     for J in sweep_J:
         args.eta = 0.06
