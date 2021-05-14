@@ -109,7 +109,7 @@ def LookAhead(test_error_array, sorted_ind, search_ind, X_train, X_test, T_train
 
     return LookAhead_ind
 
-def Err_vs_feat_window(args):
+def Err_vs_feat_window(X_train, X_test, T_train, T_test, args):
     """[This function plots training and testing error versus number of features |S| for an image dataset.]
 
     Args:
@@ -125,7 +125,7 @@ def Err_vs_feat_window(args):
     LayerNum = SSFN_hparameters["LayerNum"]
     NodeNum = SSFN_hparameters["NodeNum"]
 
-    X_train, X_test, T_train, T_test = define_dataset(args)
+    # X_train, X_test, T_train, T_test = define_dataset(args)
     # X_train = X_train[:,:int(round(0.9*J))] 
     # T_train = T_train[:,:int(round(0.9*J))]
     # X_test = X_test[:,:int(round(0.1*J))] 
@@ -148,14 +148,16 @@ def Err_vs_feat_window(args):
 
     # train_error, test_error = SSFN( X_train, X_test, T_train, T_test, SSFN_hparameters)
     rows, cols, depth = (28, 28, 1)
-    radius = 2
+    radius = 4
     R_num = rows // radius
     C_num = cols // radius
     search_ind = np.arange(R_num * C_num)
 
     P = X_train.shape[0]
-    train_error_sorted = np.array([])
-    test_error_sorted = np.array([])
+    train_nme_sorted = np.array([])
+    test_nme_sorted = np.array([])
+    train_mse_sorted = np.array([])
+    test_mse_sorted = np.array([])
     train_acc_sorted = np.array([])
     test_acc_sorted = np.array([])
     sorted_ind = np.array([],  dtype=int)
@@ -163,8 +165,10 @@ def Err_vs_feat_window(args):
     sorted_ind_col = np.array([],  dtype=int)
 
     while len(search_ind) > 0 :
-        train_error_array = np.array([])
-        test_error_array = np.array([])
+        train_nme_array = np.array([])
+        test_nme_array = np.array([])
+        train_mse_array = np.array([])
+        test_mse_array = np.array([])
         train_acc_array = np.array([])
         test_acc_array = np.array([])
         for i in search_ind: 
@@ -178,23 +182,24 @@ def Err_vs_feat_window(args):
                 X_tr, X_ts = return_patched_data(X_train, X_test, row, np.append(sorted_ind_col,col), radius=radius, rows=28, cols=28)
             else:
                 X_tr, X_ts = return_patched_data(X_train, X_test, row, col, radius=radius, rows=28, cols=28)
-            train_error, test_error, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
-            train_error_array = np.append(train_error_array, train_error)
-            test_error_array = np.append(test_error_array, test_error)
+            train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+            train_nme_array = np.append(train_nme_array, train_nme)
+            test_nme_array = np.append(test_nme_array, test_nme)
+            train_mse_array = np.append(train_mse_array, train_mse)
+            test_mse_array = np.append(test_mse_array, test_mse)
             train_acc_array = np.append(train_acc_array, train_acc)
             test_acc_array = np.append(test_acc_array, test_acc)
 
-        i = np.argmin(test_error_array)
+        i = np.argmin(test_nme_array)
 
-        # if len(test_error_sorted) > 1:
-        #     if np.abs(test_error_array[i] - test_error_sorted[-1])/np.abs(test_error_sorted[-1]) < eta or np.abs(test_error_array[i]) <= np.abs(test_error_sorted[-1]):
-        #         break
         best_ind = search_ind[i]
         best_ind_row = search_ind[i] // C_num
         best_ind_col = search_ind[i] % C_num
 
-        train_error_sorted = np.append(train_error_sorted, train_error_array[i])
-        test_error_sorted = np.append(test_error_sorted, test_error_array[i])
+        train_nme_sorted = np.append(train_nme_sorted, train_nme_array[i])
+        test_nme_sorted = np.append(test_nme_sorted, test_nme_array[i])
+        train_mse_sorted = np.append(train_mse_sorted, train_mse_array[i])
+        test_mse_sorted = np.append(test_mse_sorted, test_mse_array[i])
         train_acc_sorted = np.append(train_acc_sorted, train_acc_array[i])
         test_acc_sorted = np.append(test_acc_sorted, test_acc_array[i])
 
@@ -207,6 +212,10 @@ def Err_vs_feat_window(args):
         print("cols: "+str(sorted_ind_col))
         # print(str(round(len(sorted_ind)/P * 100,2))+"%")
 
+        if len(test_nme_sorted) >= 0.4 * R_num * C_num:
+            break
+
+
     # MyFPSR = FPSR([0, 1, 2],sorted_ind[0:3]) 
     # print("FPSR: " + str(MyFPSR))
     # MyFNSR = FNSR([0, 1, 2],sorted_ind[0:3]) 
@@ -216,8 +225,8 @@ def Err_vs_feat_window(args):
     output_dic["sorted_ind"]=sorted_ind 
     output_dic["sorted_ind_row"]=sorted_ind_row 
     output_dic["sorted_ind_col"]=sorted_ind_col 
-    output_dic["test_error_sorted"]=test_error_sorted 
-    output_dic["train_error_sorted"]=train_error_sorted 
+    output_dic["test_nme_sorted"]=test_nme_sorted 
+    output_dic["train_nme_sorted"]=train_nme_sorted 
     output_dic["test_acc_sorted"]=test_acc_sorted 
     output_dic["train_acc_sorted"]=train_acc_sorted 
     save_dic(output_dic, parameters_path, data, "sorted")
@@ -225,8 +234,8 @@ def Err_vs_feat_window(args):
     FontSize = 18
     csfont = {'fontname':'sans-serif'}
     plt.subplots()
-    plt.plot(np.arange(1,len(test_error_sorted)+1), test_error_sorted, 'r-', label="Test", linewidth=3)
-    plt.plot(np.arange(1,len(test_error_sorted)+1), train_error_sorted, 'b-', label="Train", linewidth=2)
+    plt.plot(np.arange(1,len(test_nme_sorted)+1), test_nme_sorted, 'r-', label="Test", linewidth=3)
+    plt.plot(np.arange(1,len(test_nme_sorted)+1), train_nme_sorted, 'b-', label="Train", linewidth=2)
     plt.legend(loc='best', fontsize=FontSize)
     plt.grid()
     plt.xlabel("Number of input features",fontdict=csfont, fontsize=FontSize)
@@ -254,9 +263,9 @@ def Err_vs_feat_window(args):
     #     plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
     #     plt.close()
 
-    return (sorted_ind_row,sorted_ind_col)
+    return (sorted_ind_row,sorted_ind_col),  train_nme_sorted[-1], test_nme_sorted[-1], train_mse_sorted[-1], test_mse_sorted[-1]
 
-def Err_vs_feat(args):
+def Err_vs_feat(X_train, X_test, T_train, T_test, args):
     """[This function plots training and testing error versus number of features |S|, refer to Figure 1 and 2 in the Overleaf.]
 
     Args:
@@ -272,7 +281,7 @@ def Err_vs_feat(args):
     LayerNum = SSFN_hparameters["LayerNum"]
     NodeNum = SSFN_hparameters["NodeNum"]
 
-    X_train, X_test, T_train, T_test = define_dataset(args)
+    # X_train, X_test, T_train, T_test = define_dataset(args)
     # X_train = X_train[:,:int(round(0.9*J))] 
     # T_train = T_train[:,:int(round(0.9*J))]
     # X_test = X_test[:,:int(round(0.1*J))] 
@@ -297,15 +306,15 @@ def Err_vs_feat(args):
 
     P=X_train.shape[0]
     search_ind = range(P)
-    train_error_sorted = np.array([])
-    test_error_sorted = np.array([])
+    train_nme_sorted = np.array([])
+    test_nme_sorted = np.array([])
     train_mse_sorted = np.array([])
     test_mse_sorted = np.array([])
     sorted_ind = np.array([],  dtype=int)
 
     while len(search_ind) > 0:
-        train_error_array = np.array([])
-        test_error_array = np.array([])
+        train_nme_array = np.array([])
+        test_nme_array = np.array([])
         train_mse_array = np.array([])
         test_mse_array = np.array([])
         for i in search_ind:
@@ -315,28 +324,31 @@ def Err_vs_feat(args):
             else:
                 X_tr = X_train[[i],:]
                 X_ts = X_test[[i],:]
-            # train_error, test_error, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
-            train_error, test_error, train_mse, test_mse = MLP( X_tr, X_ts, T_train, T_test, data)
-            train_error_array = np.append(train_error_array, train_error)
-            test_error_array = np.append(test_error_array, test_error)
+            train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+            # train_nme, test_nme, train_mse, test_mse = MLP( X_tr, X_ts, T_train, T_test, data)
+            train_nme_array = np.append(train_nme_array, train_nme)
+            test_nme_array = np.append(test_nme_array, test_nme)
             train_mse_array = np.append(train_mse_array, train_mse)
             test_mse_array = np.append(test_mse_array, test_mse)
 
         if LA == "LookAhead":
-            if len(test_error_array)>1:
-                i = LookAhead(test_error_array, sorted_ind, search_ind, X_train, X_test, T_train, T_test, SSFN_hparameters)
+            if len(test_nme_array)>1:
+                i = LookAhead(test_nme_array, sorted_ind, search_ind, X_train, X_test, T_train, T_test, SSFN_hparameters)
             else:
-                i = np.argmin(test_error_array)
+                i = np.argmin(test_nme_array)
         else:
-            i = np.argmin(test_error_array)
+            i = np.argmin(test_nme_array)
 
-        if len(test_error_sorted) > 1:
-            if np.abs(test_error_array[i] - test_error_sorted[-1])/np.abs(test_error_sorted[-1]) < eta or np.abs(test_error_array[i]) <= np.abs(test_error_sorted[-1]):
+        if len(test_nme_sorted) > 1:
+            # break
+            # if np.abs(test_nme_array[i] - test_nme_sorted[-1])/np.abs(test_nme_sorted[-1]) < eta or np.abs(test_nme_array[i]) <= np.abs(test_nme_sorted[-1]):
+            if np.abs(test_nme_array[i] - test_nme_sorted[-1])/np.abs(test_nme_sorted[-1]) > eta and np.abs(test_nme_array[i]) <= np.abs(test_nme_sorted[-1]):
                 break
+                # pass
 
         best_ind = search_ind[i]
-        train_error_sorted = np.append(train_error_sorted, train_error_array[i])
-        test_error_sorted = np.append(test_error_sorted, test_error_array[i])
+        train_nme_sorted = np.append(train_nme_sorted, train_nme_array[i])
+        test_nme_sorted = np.append(test_nme_sorted, test_nme_array[i])
         train_mse_sorted = np.append(train_mse_sorted, train_mse_array[i])
         test_mse_sorted = np.append(test_mse_sorted, test_mse_array[i])
         sorted_ind = np.append(sorted_ind, best_ind)
@@ -352,8 +364,8 @@ def Err_vs_feat(args):
 
     output_dic = {}
     output_dic["sorted_ind"]=sorted_ind 
-    output_dic["test_error_sorted"]=test_error_sorted 
-    output_dic["train_error_sorted"]=train_error_sorted 
+    output_dic["test_nme_sorted"]=test_nme_sorted 
+    output_dic["train_nme_sorted"]=train_nme_sorted 
     output_dic["test_mse_sorted"]=test_mse_sorted 
     output_dic["train_mse_sorted"]=train_mse_sorted 
     save_dic(output_dic, parameters_path, data, "sorted")
@@ -361,8 +373,8 @@ def Err_vs_feat(args):
     FontSize = 18
     csfont = {'fontname':'sans-serif'}
     plt.subplots()
-    plt.plot(np.arange(1,len(test_error_sorted)+1), test_error_sorted, 'r-', label="Test", linewidth=3)
-    plt.plot(np.arange(1,len(test_error_sorted)+1), train_error_sorted, 'b-', label="Train", linewidth=2)
+    plt.plot(np.arange(1,len(test_nme_sorted)+1), test_nme_sorted, 'r-', label="Test", linewidth=3)
+    plt.plot(np.arange(1,len(test_nme_sorted)+1), train_nme_sorted, 'b-', label="Train", linewidth=2)
     plt.legend(loc='best', fontsize=FontSize)
     plt.grid()
     plt.xlabel("Number of input features",fontdict=csfont, fontsize=FontSize)
@@ -371,7 +383,7 @@ def Err_vs_feat(args):
     plt.xticks(fontsize=FontSize)
     plt.yticks(fontsize=FontSize)
     plt.tight_layout()
-    plt.savefig(result_path +"Err_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+"_MLP.png",dpi=600)
+    plt.savefig(result_path +"Err_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+"_SSFN.png",dpi=600)
     plt.close()
 
     if data=="MNIST":
@@ -390,7 +402,7 @@ def Err_vs_feat(args):
         plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
         plt.close()
 
-    return sorted_ind, train_error_sorted[-1], test_error_sorted[-1], train_mse_sorted[-1], test_mse_sorted[-1]
+    return sorted_ind, train_nme_sorted[-1], test_nme_sorted[-1], train_mse_sorted[-1], test_mse_sorted[-1]
 
 def MonteCarlo_NMP(J,Pextra,LA,args):
     """[This function is used for parallel processing when doing Monte Carlo trials. 
@@ -705,8 +717,8 @@ def main():
 def NMP_train(X_train, X_test, T_train, T_test, args):
     # args = define_parser()
 
-    # sorted_ind = Err_vs_feat_window(args)
-    sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat(args)
+    # sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat_window(X_train, X_test, T_train, T_test, args)
+    sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat(X_train, X_test, T_train, T_test, args)
     # acc_vs_J(_logger,args)
     # acc_vs_P(_logger,args)
     # plot_MNIST(_logger,args)

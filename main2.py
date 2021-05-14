@@ -12,7 +12,7 @@ from joblib import Parallel, delayed
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run progressive learning")
-    parser.add_argument("--data", default="artificial", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="Boston", help="Input dataset available as the paper shows")
     parser.add_argument("--lam", type=float, default=10**(2), help="Reguralized parameters on the least-square problem")
     parser.add_argument("--mu", type=float, default=10**(3), help="Parameter for ADMM")
     parser.add_argument("--kMax", type=int, default=100, help="Iteration number of ADMM")
@@ -43,8 +43,10 @@ def define_dataset(args):
         X_train, X_test, T_train,  T_test  = prepare_Ohm()
     elif args.data == "NN":
         X_train, X_test, T_train,  T_test  = prepare_NN()
-    elif args.data == "artificial":
+    elif args.data == "Artificial":
         X_train, X_test, T_train,  T_test  = prepare_artificial()
+    elif args.data == "Boston":
+        X_train, X_test, T_train,  T_test  = prepare_Boston()
     return X_train, X_test, T_train, T_test
 
 
@@ -54,9 +56,9 @@ def main():
     X_train, X_test, T_train, T_test = define_dataset(args)
     _logger.info("The dataset we use is {}".format(args.data))
 
-    S = [0, 1, 2, 3, 4] # set of true relevant features
+    S = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] # set of true relevant features
     sweep_eta = 0.01 * np.arange(1,11)
-    sweep_J = np.arange(600, 650, 50)
+    sweep_J = np.arange(1000, 1050, 50)
 
     NMP_avg_FPSR = np.array([])
     NMP_avg_FNSR = np.array([])    
@@ -68,7 +70,7 @@ def main():
     MC_Num=10
 
     for J in sweep_J:
-        args.eta = 0.06
+        args.eta = 0.005
         # print("eta: "+ str(eta))
         print("J: "+ str(J))
 
@@ -81,7 +83,9 @@ def main():
 
         for i in np.arange(0,MC_Num):
             X_train, X_test, T_train, T_test = define_dataset(args)
-            S_hat, train_NME, test_NME, train_mse, test_mse  = NMP_train(X_train[:,0:J], X_test, T_train[:,0:J], T_test, args)       # set of selected features  
+            J_subset = np.random.choice(X_train.shape[1], J)
+            # S_hat, train_NME, test_NME, train_mse, test_mse  = NMP_train(X_train[:,J_subset], X_test, T_train[:,J_subset], T_test, args)       # set of selected features  
+            S_hat, train_NME, test_NME, train_mse, test_mse  = NMP_train(X_train, X_test, T_train, T_test, args)       # set of selected features  
             # print(S_hat)
 
             NMP_FPSR[0,i] = FPSR(S,S_hat)
