@@ -18,7 +18,7 @@ def MLP(X_train, X_test, T_train, T_test, data):
     Q= T_train.shape[0]
     data = data
     learning_rate = 10**(-6)
-    Epoch_num = 2
+    Epoch_num = 10
     batchSize = 32
     Layer_Num = 1
 

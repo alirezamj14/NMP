@@ -10,7 +10,7 @@ def prepare_artificial():
     N = 1300             # Number of samples  
     Ntr = 1000           # Number of training samples 
     P = 5               # Number of input features
-    PExtra=10          # Number of extra random features
+    PExtra=495          # Number of extra random features
     e = np.random.randn(1, N)
     Z = np.random.randn(P+PExtra, N)
     X = (Z + e)/2

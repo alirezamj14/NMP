@@ -4,6 +4,7 @@ import logging
 import argparse
 import numpy as np
 from SSFN import SSFN
+from CNN import my_CNN
 from MLP import MLP
 from MyFunctions import *
 from load_dataset import *
@@ -182,7 +183,8 @@ def Err_vs_feat_window(X_train, X_test, T_train, T_test, args):
                 X_tr, X_ts = return_patched_data(X_train, X_test, row, np.append(sorted_ind_col,col), radius=radius, rows=28, cols=28)
             else:
                 X_tr, X_ts = return_patched_data(X_train, X_test, row, col, radius=radius, rows=28, cols=28)
-            train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+            # train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+            train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = my_CNN( X_tr, X_ts, T_train, T_test)
             train_nme_array = np.append(train_nme_array, train_nme)
             test_nme_array = np.append(test_nme_array, test_nme)
             train_mse_array = np.append(train_mse_array, train_mse)
@@ -210,7 +212,7 @@ def Err_vs_feat_window(X_train, X_test, T_train, T_test, args):
 
         print("rows: "+str(sorted_ind_row))
         print("cols: "+str(sorted_ind_col))
-        # print(str(round(len(sorted_ind)/P * 100,2))+"%")
+        print("Test NME:" + str(test_nme_sorted))
 
         if len(test_nme_sorted) >= 0.4 * R_num * C_num:
             break
@@ -324,8 +326,8 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
             else:
                 X_tr = X_train[[i],:]
                 X_ts = X_test[[i],:]
-            train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
-            # train_nme, test_nme, train_mse, test_mse = MLP( X_tr, X_ts, T_train, T_test, data)
+            # train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+            train_nme, test_nme, train_mse, test_mse = MLP( X_tr, X_ts, T_train, T_test, data)
             train_nme_array = np.append(train_nme_array, train_nme)
             test_nme_array = np.append(test_nme_array, test_nme)
             train_mse_array = np.append(train_mse_array, train_mse)
@@ -717,8 +719,8 @@ def main():
 def NMP_train(X_train, X_test, T_train, T_test, args):
     # args = define_parser()
 
-    # sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat_window(X_train, X_test, T_train, T_test, args)
-    sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat(X_train, X_test, T_train, T_test, args)
+    sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat_window(X_train, X_test, T_train, T_test, args)
+    # sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat(X_train, X_test, T_train, T_test, args)
     # acc_vs_J(_logger,args)
     # acc_vs_P(_logger,args)
     # plot_MNIST(_logger,args)
