@@ -2,6 +2,7 @@
 
 import logging 
 import argparse
+import numpy as np
 from SSFN import SSFN
 from MLP import MLP
 from MyFunctions import *
@@ -298,15 +299,15 @@ def Err_vs_feat(args):
     search_ind = range(P)
     train_error_sorted = np.array([])
     test_error_sorted = np.array([])
-    train_acc_sorted = np.array([])
-    test_acc_sorted = np.array([])
+    train_mse_sorted = np.array([])
+    test_mse_sorted = np.array([])
     sorted_ind = np.array([],  dtype=int)
 
     while len(search_ind) > 0:
         train_error_array = np.array([])
         test_error_array = np.array([])
-        train_acc_array = np.array([])
-        test_acc_array = np.array([])
+        train_mse_array = np.array([])
+        test_mse_array = np.array([])
         for i in search_ind:
             if len(sorted_ind)>=1:
                 X_tr = X_train[np.append(sorted_ind,i),:]
@@ -315,11 +316,11 @@ def Err_vs_feat(args):
                 X_tr = X_train[[i],:]
                 X_ts = X_test[[i],:]
             # train_error, test_error, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
-            train_error, test_error, train_acc, test_acc = MLP( X_tr, X_ts, T_train, T_test, data)
+            train_error, test_error, train_mse, test_mse = MLP( X_tr, X_ts, T_train, T_test, data)
             train_error_array = np.append(train_error_array, train_error)
             test_error_array = np.append(test_error_array, test_error)
-            train_acc_array = np.append(train_acc_array, train_acc)
-            test_acc_array = np.append(test_acc_array, test_acc)
+            train_mse_array = np.append(train_mse_array, train_mse)
+            test_mse_array = np.append(test_mse_array, test_mse)
 
         if LA == "LookAhead":
             if len(test_error_array)>1:
@@ -336,8 +337,8 @@ def Err_vs_feat(args):
         best_ind = search_ind[i]
         train_error_sorted = np.append(train_error_sorted, train_error_array[i])
         test_error_sorted = np.append(test_error_sorted, test_error_array[i])
-        train_acc_sorted = np.append(train_acc_sorted, train_acc_array[i])
-        test_acc_sorted = np.append(test_acc_sorted, test_acc_array[i])
+        train_mse_sorted = np.append(train_mse_sorted, train_mse_array[i])
+        test_mse_sorted = np.append(test_mse_sorted, test_mse_array[i])
         sorted_ind = np.append(sorted_ind, best_ind)
         search_ind = np.delete(search_ind, i)
     
@@ -353,8 +354,8 @@ def Err_vs_feat(args):
     output_dic["sorted_ind"]=sorted_ind 
     output_dic["test_error_sorted"]=test_error_sorted 
     output_dic["train_error_sorted"]=train_error_sorted 
-    output_dic["test_acc_sorted"]=test_acc_sorted 
-    output_dic["train_acc_sorted"]=train_acc_sorted 
+    output_dic["test_mse_sorted"]=test_mse_sorted 
+    output_dic["train_mse_sorted"]=train_mse_sorted 
     save_dic(output_dic, parameters_path, data, "sorted")
 
     FontSize = 18
@@ -370,7 +371,7 @@ def Err_vs_feat(args):
     plt.xticks(fontsize=FontSize)
     plt.yticks(fontsize=FontSize)
     plt.tight_layout()
-    plt.savefig(result_path +"Err_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
+    plt.savefig(result_path +"Err_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+"_MLP.png",dpi=600)
     plt.close()
 
     if data=="MNIST":
@@ -389,7 +390,7 @@ def Err_vs_feat(args):
         plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
         plt.close()
 
-    return sorted_ind
+    return sorted_ind, train_error_sorted[-1], test_error_sorted[-1], train_mse_sorted[-1], test_mse_sorted[-1]
 
 def MonteCarlo_NMP(J,Pextra,LA,args):
     """[This function is used for parallel processing when doing Monte Carlo trials. 
@@ -705,13 +706,13 @@ def NMP_train(X_train, X_test, T_train, T_test, args):
     # args = define_parser()
 
     # sorted_ind = Err_vs_feat_window(args)
-    sorted_ind = Err_vs_feat(args)
+    sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat(args)
     # acc_vs_J(_logger,args)
     # acc_vs_P(_logger,args)
     # plot_MNIST(_logger,args)
     # my_plot(_logger,args)
 
-    return sorted_ind
+    return sorted_ind, train_NME, test_NME, train_mse, test_mse 
 
 if __name__ == '__main__':
     main()

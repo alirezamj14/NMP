@@ -1,5 +1,8 @@
 import numpy as np
+from tensorflow import keras
 import tensorflow as tf
+from tensorflow.keras import layers
+from tensorflow.keras.models import Model, Sequential
 from MyFunctions import *
 import json
 import pickle
@@ -15,81 +18,36 @@ def MLP(X_train, X_test, T_train, T_test, data):
     Q= T_train.shape[0]
     data = data
     learning_rate = 10**(-6)
-    Epoch_num = 100
+    Epoch_num = 10
     batchSize = 32
     Layer_Num = 1
 
     iteration_num = round(m/batchSize)
 
-    _logger.info("Read parameters by HNF")
-    parameters_path = "./parameters/"
+    # _logger.info("Read parameters by HNF")
+    # parameters_path = "./parameters/"
 
     ######################################################################################
     ####################        Tensorflow v2       ######################################
     ######################################################################################
-    class MyModel(tf.keras.Model):
-        def __init__(self):
-            super(MyModel, self).__init__()
-            for i in range(1, Layer_Num + 1):
-                ni = X_train.shape[0] + 1
-                mi = 500
-                setattr(self, "W"+str(i), tf.Variable(initial_value=tf.random.normal((ni, mi))), name="W"+str(i), dtype=tf.float32))
-                # setattr(self, "W"+str(i), tf.Variable(tf.constant(value=outputs["W"+str(i)]), name="W"+str(i), dtype=tf.float32))
-                self.O = tf.Variable(tf.constant(value=outputs["O"]), name="O", dtype=tf.float32)
+    inputs = keras.Input(shape=X_train.shape[0])
+    h = layers.Dense(500, activation="relu", name="output_layer")(inputs)
+    outputs = layers.Dense(Q)(h)
 
-        def call(self, inputs):
-            Y=inputs
-            Y=tf.concat([Y, tf.ones([1, Y.shape[1]], tf.float32)], 0)
-            for i in range(1, Layer_Num + 1):
-                Z = tf.matmul(getattr(self, "W"+str(i)), Y)
-                Y = tf.keras.activations.relu(Z)
-                Y=tf.concat([Y, tf.ones([1, Y.shape[1]], tf.float32)], 0)
-            T_hat=tf.matmul(self.O, tf.cast(Y, tf.float32)) 
-            return T_hat, Y
-        
-    my_model = MyModel()
-    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+    model = Model(inputs=inputs, outputs=outputs)
+    # model.summary()
 
-    @tf.function
-    def get_grad_and_loss(inputs, labels):
-        with tf.GradientTape() as tape:
-            T_hat, _=my_model(inputs)
-            total_loss = compute_cost(T_hat, labels)
+    model.compile(loss="MSE", optimizer="adam", metrics=["MeanSquaredError"])
+    model.fit(X_train.T, T_train.T, batch_size=batchSize, epochs=Epoch_num, validation_split=0.1, verbose=0)
 
-        gradients = tape.gradient(total_loss, my_model.trainable_variables)
-        return gradients
+    # score = model.evaluate(X_test.T, T_test.T, verbose=0)
+    # print("Test loss:", score[0])
+    # print("Test accuracy:", score[1])
 
-    train_accuracy_lists = []
-    test_accuracy_lists = []
+    t_hat = model.predict(X_train.T)
+    t_hat_test = model.predict(X_test.T)
 
-    for epoch in range(1, Epoch_num+1):
-        shuffled_X, shuffled_T = shuffle_data(X_train, T_train)
-
-        for i in range(0, iteration_num):
-            X_batch, T_batch = get_batch(shuffled_X, shuffled_T, i, batchSize)
-            gradients = get_grad_and_loss(X_batch, T_batch)
-            optimizer.apply_gradients(zip(gradients, my_model.trainable_variables))
-
-        if epoch % (Epoch_num/10) == 0:    
-            T_hat, _=my_model(X_train)
-            T_hat_test, _=my_model(X_test)
-            train_accuracy = calculate_accuracy(T_hat.numpy(), T_train)
-            test_accuracy = calculate_accuracy(T_hat_test.numpy(), T_test)
-            train_accuracy_lists.append(train_accuracy)
-            test_accuracy_lists.append(test_accuracy)
-            print("Train Accuracy: {:.3f}".format(train_accuracy)," Test Accuracy: {:.3f}".format(test_accuracy))
-
-    t_hat, _ = my_model(X_train)
-    t_hat_test, _ = my_model(X_test)
-    # outputs["Feat_train"]=Y_train[:-1,:]
-    # outputs["Feat_test"]=Y_test[:-1,:]
-    # outputs["T_train"]=T_train
-    # outputs["T_test"]=T_test
-    # outputs["O"]=my_model.O.numpy()
-
-    # save_dic(outputs, parameters_path, data, "weights_MLP")
-
-    return compute_nme(T_train,t_hat), compute_nme(T_test,t_hat_test), calculate_accuracy(T_train,t_hat), calculate_accuracy(T_test,t_hat_test)
+    return compute_nme(t_hat.T,T_train), compute_nme(t_hat_test.T,T_test), compute_mse(t_hat.T,T_train), compute_mse(t_hat_test.T,T_test)
 
 
         
