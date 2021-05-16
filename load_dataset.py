@@ -104,11 +104,11 @@ def prepare_cifar10():
     return X_train, X_test, T_train, T_test
 
 def prepare_satimage():
-    train_X = loadmat("./mat_files/Satimage.mat")["train_x"].astype(np.float32)
-    train_T = loadmat("./mat_files/Satimage.mat")["train_y"].astype(np.float32)
-    test_X = loadmat("./mat_files/Satimage.mat")["test_x"].astype(np.float32)
-    test_T= loadmat("./mat_files/Satimage.mat")["test_y"].astype(np.float32)
-    return train_X, test_X, train_T, test_T
+    X_train = loadmat("./mat_files/Satimage.mat")["train_x"].astype(np.float32)
+    T_train = loadmat("./mat_files/Satimage.mat")["train_y"].astype(np.float32)
+    X_test = loadmat("./mat_files/Satimage.mat")["test_x"].astype(np.float32)
+    T_test= loadmat("./mat_files/Satimage.mat")["test_y"].astype(np.float32)
+    return X_train, X_test, T_train,  T_test
 
 def prepare_mnist():
     X_train =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)
@@ -125,18 +125,18 @@ def prepare_vowel():
     return X_train, X_test, T_train, T_test
 
 def prepare_norb():
-    train_X = loadmat("./mat_files/NORB.mat")["train_x"].T.astype(np.float32)
-    train_T = loadmat("./mat_files/NORB.mat")["train_y"].T.astype(np.float32)
-    test_X = loadmat("./mat_files/NORB.mat")["test_x"].T.astype(np.float32)
-    test_T= loadmat("./mat_files/NORB.mat")["test_y"].T.astype(np.float32)
-    return train_X, test_X, train_T, test_T
+    X_train = loadmat("./mat_files/NORB.mat")["train_x"].T.astype(np.float32)
+    T_train = loadmat("./mat_files/NORB.mat")["train_y"].T.astype(np.float32)
+    X_test = loadmat("./mat_files/NORB.mat")["test_x"].T.astype(np.float32)
+    T_test= loadmat("./mat_files/NORB.mat")["test_y"].T.astype(np.float32)
+    return X_train, X_test, T_train,  T_test
 
 def prepare_shuttle():
-    train_X = loadmat("./mat_files/Shuttle.mat")["train_x"].astype(np.float32)
-    train_T = loadmat("./mat_files/Shuttle.mat")["train_y"].astype(np.float32)
-    test_X = loadmat("./mat_files/Shuttle.mat")["test_x"].astype(np.float32)
-    test_T= loadmat("./mat_files/Shuttle.mat")["test_y"].astype(np.float32)
-    return train_X, test_X, train_T, test_T
+    X_train = loadmat("./mat_files/Shuttle.mat")["train_x"].astype(np.float32)
+    T_train = loadmat("./mat_files/Shuttle.mat")["train_y"].astype(np.float32)
+    X_test = loadmat("./mat_files/Shuttle.mat")["test_x"].astype(np.float32)
+    T_test= loadmat("./mat_files/Shuttle.mat")["test_y"].astype(np.float32)
+    return X_train, X_test, T_train,  T_test
 
 def prepare_caltech():
     train_num = 6000
@@ -146,9 +146,9 @@ def prepare_caltech():
     random_lists = np.random.choice(range(X.shape[1]), train_num + test_num, replace=False)
     random_train_lists = random_lists[:train_num]
     random_test_lists = random_lists[train_num:]
-    train_X, test_X = X[:, random_train_lists], X[:, random_test_lists]
-    train_T, test_T = T[:, random_train_lists], T[:, random_test_lists]
-    return train_X, test_X, train_T, test_T
+    X_train, X_test = X[:, random_train_lists], X[:, random_test_lists]
+    T_train, T_test = T[:, random_train_lists], T[:, random_test_lists]
+    return X_train, X_test, T_train,  T_test
    
 def prepare_letter():
     train_num = 13333
@@ -158,6 +158,24 @@ def prepare_letter():
     random_lists = np.random.choice(range(X.shape[1]), train_num + test_num, replace=False)
     random_train_lists = random_lists[:train_num]
     random_test_lists = random_lists[train_num:]
-    train_X, test_X = X[:, random_train_lists], X[:, random_test_lists]
-    train_T, test_T = T[:, random_train_lists], T[:, random_test_lists]
-    return train_X, test_X, train_T, test_T
+    X_train, X_test = X[:, random_train_lists], X[:, random_test_lists]
+    T_train, T_test = T[:, random_train_lists], T[:, random_test_lists]
+    return X_train, X_test, T_train,  T_test
+
+def prepare_Boston():
+    from sklearn.datasets import load_boston
+    from sklearn.model_selection import train_test_split
+
+    X, T = load_boston(return_X_y=True)
+    X_train, X_test, T_train, T_test = train_test_split(X, T, test_size=0.33, random_state=21)
+    S = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    fExtra=100
+    X_train = np.concatenate((X_train, 10*np.random.rand(X_train.shape[0],fExtra)+10), axis=1)
+    X_test = np.concatenate((X_test, 10*np.random.rand(X_test.shape[0],fExtra)+10), axis=1)
+    T_train = T_train.reshape(-1,1)
+    T_test = T_test.reshape(-1,1)
+    
+    X_train = (X_train - X_train.mean(axis=0)) / np.std(X_train, axis=0)
+    X_test = (X_test - X_test.mean(axis=0)) / np.std(X_test, axis=0)
+
+    return X_train.T, X_test.T, T_train.T, T_test.T

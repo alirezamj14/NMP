@@ -12,7 +12,7 @@ from joblib import Parallel, delayed
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run progressive learning")
-    parser.add_argument("--data", default="artificial", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
     parser.add_argument("--lam", type=float, default=10**(2), help="Reguralized parameters on the least-square problem")
     parser.add_argument("--mu", type=float, default=10**(3), help="Parameter for ADMM")
     parser.add_argument("--kMax", type=int, default=100, help="Iteration number of ADMM")
@@ -43,8 +43,10 @@ def define_dataset(args):
         X_train, X_test, T_train,  T_test  = prepare_Ohm()
     elif args.data == "NN":
         X_train, X_test, T_train,  T_test  = prepare_NN()
-    elif args.data == "artificial":
+    elif args.data == "Artificial":
         X_train, X_test, T_train,  T_test  = prepare_artificial()
+    elif args.data == "Boston":
+        X_train, X_test, T_train,  T_test  = prepare_Boston()
     return X_train, X_test, T_train, T_test
 
 
@@ -54,40 +56,66 @@ def main():
     X_train, X_test, T_train, T_test = define_dataset(args)
     _logger.info("The dataset we use is {}".format(args.data))
 
-    S = [0, 1, 2, 3, 4] # set of true relevant features
+    S = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] # set of true relevant features
     sweep_eta = 0.01 * np.arange(1,11)
-    sweep_J = np.arange(50, 1050, 50)
+    sweep_J = np.arange(1000, 1050, 50)
 
     NMP_avg_FPSR = np.array([])
     NMP_avg_FNSR = np.array([])    
+    NMP_avg_PNME = np.array([])
+    NMP_avg_FNME = np.array([])    
+    NMP_avg_PMSE = np.array([])
+    NMP_avg_FMSE = np.array([])    
 
-    MC_Num=5
+    MC_Num=1
 
     for J in sweep_J:
-        args.eta = 0.06
+        args.eta = 0.005
         # print("eta: "+ str(eta))
         print("J: "+ str(J))
 
         NMP_FPSR = np.zeros((1, MC_Num))
         NMP_FNSR = np.zeros((1, MC_Num))
+        NMP_PNME = np.zeros((1, MC_Num))
+        NMP_FNME = np.zeros((1, MC_Num))
+        NMP_PMSE = np.zeros((1, MC_Num))
+        NMP_FMSE = np.zeros((1, MC_Num))
 
         for i in np.arange(0,MC_Num):
             X_train, X_test, T_train, T_test = define_dataset(args)
-            S_hat = NMP_train(X_train[:,0:J], X_test, T_train[:,0:J], T_test, args)       # set of selected features  
+            J_subset = np.random.choice(X_train.shape[1], J)
+            S_hat, train_NME, test_NME, train_mse, test_mse  = NMP_train(X_train[:,J_subset], X_test, T_train[:,J_subset], T_test, args)       # set of selected features  
+            # S_hat, train_NME, test_NME, train_mse, test_mse  = NMP_train(X_train, X_test, T_train, T_test, args)       # set of selected features  
             # print(S_hat)
 
-            NMP_FPSR[0,i] = FPSR(S,S_hat)
-            NMP_FNSR[0,i] = FNSR(S,S_hat)
+            # NMP_FPSR[0,i] = FPSR(S,S_hat)
+            # NMP_FNSR[0,i] = FNSR(S,S_hat)
+            NMP_PNME[0,i] = test_NME
+            NMP_FNME[0,i] = train_NME
+            NMP_PMSE[0,i] = test_mse
+            NMP_FMSE[0,i] = train_mse
 
             # print(NMP_FPSR)
             # print(NMP_FNSR)
+            print(NMP_PNME)
+            print(NMP_FNME)
+            print(NMP_PMSE)
+            print(NMP_FMSE)
 
-        NMP_avg_FPSR = np.append(NMP_avg_FPSR, np.mean(NMP_FPSR))
-        NMP_avg_FNSR = np.append(NMP_avg_FNSR, np.mean(NMP_FNSR))
+        # NMP_avg_FPSR = np.append(NMP_avg_FPSR, np.mean(NMP_FPSR))
+        # NMP_avg_FNSR = np.append(NMP_avg_FNSR, np.mean(NMP_FNSR))
+        NMP_avg_PNME = np.append(NMP_avg_PNME, np.mean(NMP_PNME))
+        NMP_avg_FNME = np.append(NMP_avg_FNME, np.mean(NMP_FNME))
+        NMP_avg_PMSE = np.append(NMP_avg_PMSE, np.mean(NMP_PMSE))
+        NMP_avg_FMSE = np.append(NMP_avg_FMSE, np.mean(NMP_FMSE))
 
-        print("Average FPSR of NMP: " + str(NMP_avg_FPSR))
-        print("Average FNSR of NMP: " + str(NMP_avg_FNSR))
-    
+        # print("Average FPSR of NMP: " + str(NMP_avg_FPSR))
+        # print("Average FNSR of NMP: " + str(NMP_avg_FNSR))
+        print("Average PNME of NMP: " + str(NMP_avg_PNME))
+        print("Average FNME of NMP: " + str(NMP_avg_FNME))
+        print("Average PMSE of NMP: " + str(NMP_avg_PMSE))
+        print("Average FMSE of NMP: " + str(NMP_avg_FMSE))
+
     FontSize = 18
     result_path = "./results/"
     csfont = {'fontname':'sans-serif'}
