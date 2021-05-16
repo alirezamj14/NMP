@@ -72,11 +72,11 @@ class CNNModel:
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run NMP")
-    parser.add_argument("--data", default="BOSTON", help="Input dataset available as the paper shows")
-    parser.add_argument("--algo", default="RF", help="The algorithm used for feature selection")
+    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
+    parser.add_argument("--algo", default="BART", help="The algorithm used for feature selection")
     parser.add_argument("--tree_size", default="20", help="The number of trees used in BART or RF")
     parser.add_argument("--MC_Num", default="10", help="The number of MC simulations done")
-    parser.add_argument("--deeplift_sample_size", default="1000", help="The number of samples chosen from deeplift for explaining in each MC simulation")
+    parser.add_argument("--deeplift_sample_size", default="10", help="The number of samples chosen from deeplift for explaining in each MC simulation")
     args = parser.parse_args()
     return args
 
@@ -294,11 +294,21 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         # Choose features which has 1% importance according to paper: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6660200/ 
         S_hat = np.argwhere(importance_vals > 0.005).flatten()
         
+        if args.data=="MNIST": # Take 40% features of MNIST only
+            file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".joblib"
+            S_hat = np.argsort(importance_vals)[::-1][:315].flatten() #40% features
+            model = RandomForestRegressor(n_estimators=100) 
+            model = create_model(args, file_path, model, X_train[:,S_hat], T_train)
+            X_train = X_train[:,S_hat]
+            X_test = X_test[:,S_hat]
         log_params = True
 
     elif args.algo == "DEEPLIFT": 
         # Implemented using DeepExplain in SHAP: https://github.com/slundberg/shap
         #-------------------------------------------------------------------------#
+        x_train = X_train
+        x_test = X_test
+
         X_train = X_train.reshape(X_train.shape[0], 28, 28)
         X_test = X_test.reshape(X_test.shape[0], 28, 28)
         # Make sure images have shape (28, 28, 1)
@@ -337,7 +347,7 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         print("Test accuracy:", score_test[1]) 
 
         background = X_train[np.random.choice(X_train.shape[0], 100, replace=False)]
-        # explain predictions of the model on four images
+        # explain predictions of the model on 10 images
         e = shap.DeepExplainer(model, background)
         
         x_test_sample = X_test[np.random.choice(X_test.shape[0], int(args.deeplift_sample_size), replace=False), :]
@@ -347,17 +357,34 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         total_val = np.sum(np.sum(np.abs(shap_values), axis=0), axis=0).flatten()
         S_hat = total_val.argsort()[::-1]
 
+        if args.data=="MNIST": # Take 40% features of MNIST only
+            X_train = x_train[:,S_hat]
+            X_test = x_test[:,S_hat]
+            X_train = X_train.reshape(X_train.shape[0], 28, 28)
+            X_test = X_test.reshape(X_test.shape[0], 28, 28)
+            # Make sure images have shape (28, 28, 1)
+            X_train = np.expand_dims(X_train, -1)
+            X_test = np.expand_dims(X_test, -1)
+            file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".h5"
+            S_hat = total_val.argsort()[::-1][:315] #40% features
+            model_new = CNNModel(num_classes, input_shape).create_cnn_model()
+            model_new.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+            model = create_model(args, file_path, model_new, X_train, T_train)
+
         # Just to compare what global features SHAP with DeepLift choose
-        X_train_ori =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)
-        show_image([X_train_ori[:,1],X_train_ori[:,20],X_train_ori[:,30]],S_hat[0:len(S)], (args.algo+str(i)))
+        # X_train_ori =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)
+        # show_image([X_train_ori[:,1],X_train_ori[:,20],X_train_ori[:,30]],S_hat[0:len(S)], (args.algo+str(i)))
         
-        #show_image(x_train[1,:].flatten(),x_train[20,:].flatten(),x_train[30,:].flatten(),S_hat, (args.algo+str(i)))
+        # show_image(x_train[1,:].flatten(),x_train[20,:].flatten(),x_train[30,:].flatten(),S_hat, (args.algo+str(i)))
 
         log_params = True
 
     elif args.algo=="BART":
         # Implemented using XBART: https://github.com/JingyuHe/XBART
         #----------------------------------------------------------#
+        x_train = X_train
+        x_test = X_test
+
         X_train = pd.DataFrame(X_train)
         X_test = pd.DataFrame(X_test)
 
@@ -366,12 +393,20 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         T_test = T_test.flatten()
 
         file_path = file_path_prefix + args.data + "/" + args.algo + str(args.tree_size) + "-" + str(i) + ".joblib"
-
+        # model = XBART(num_trees = int(args.tree_size), num_sweeps = 20, burnin = 15, verbose = True, parallel = True)
         model = XBART(num_trees = int(args.tree_size), num_sweeps = 20, burnin = 15, verbose = True, parallel = True)
         model = create_model(args, file_path, model, X_train, T_train)
         
         S_hat = sorted(model.importance, key=model.importance.get)[::-1]
-        print(S_hat)
+        
+        if args.data=="MNIST": # Take 40% features of MNIST only
+            file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".joblib"
+            S_hat = sorted(model.importance, key=model.importance.get)[::-1][:315] #40% features
+            model = XBART(num_trees = int(args.tree_size), num_sweeps = 20, burnin = 15, verbose = True, parallel = True)
+            X_train = pd.DataFrame(x_train[:,S_hat])
+            X_test = pd.DataFrame(x_test[:,S_hat])
+            model = create_model(args, file_path, model, X_train, T_train)
+            
 
         # Ugly hack otherwise xbart predict does not work
         T_train = T_train.reshape(X_train.shape[0], 1)
@@ -397,17 +432,26 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
     elif args.algo=="LASSO":
         file_path = file_path_prefix + args.data + "/" + args.algo + "-" + str(i) + ".joblib"
 
-        T_train = np.argmax(T_train, axis=1)
-        T_test = np.argmax(T_test, axis=1)
+        #T_train = np.argmax(T_train, axis=1)
+        #T_test = np.argmax(T_test, axis=1)
 
-        model = linear_model.Lasso(alpha=0.01, tol=1e-6, max_iter=5000)
+        model = linear_model.Lasso(alpha=0.01, max_iter=50000)
         model = create_model(args, file_path, model, X_train, T_train)
 
         S_hat = np.argsort(model.coef_)
         
+        if args.data=="MNIST": # Take 40% features of MNIST only
+            file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".joblib"
+            S_hat = np.argsort(model.coef_)[::-1][:315].flatten() #40% features
+            model = linear_model.Lasso(alpha=0.01, tol=1e-6, max_iter=5000)
+            model = create_model(args, file_path, model, X_train[:,S_hat], T_train)
+            X_train = X_train[:,S_hat]
+            X_test = X_test[:,S_hat]
+
         # Ugly hack otherwise vector norm not calculated
         T_train = T_train.reshape(X_train.shape[0], 1)
         T_test = T_test.reshape(X_test.shape[0], 1)
+
         log_params = True
     
     elif args.algo=="E-NET":

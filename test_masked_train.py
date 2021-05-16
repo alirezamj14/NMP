@@ -98,7 +98,7 @@ def train_patched_data(X_train, T_train, X_test, T_test, all_idx, radius=4, stri
                 else:
                     print("Elements sum in training patch is less than threshold....skipping training!")
     avg = np.array(data)  
-    #plt.imshow(np.reshape(avg,(rows-radius+1, cols-radius+1)), cmap='viridis', interpolation='nearest')
+    #plt.imshow(np.reshape(avg,(int((rows-radius+stride)/stride), int((cols-radius+stride)/stride))).T, cmap='viridis', interpolation='nearest')
     plt.plot(avg)
     plt.show(block=True)
 
@@ -137,8 +137,8 @@ def main():
     # Selected only 10 train images. For this the train data size will expand to patch_x_moves*patch_y_moves*10 in each feature patch selector
     # patch_x_moves = math.floor((rows - patch_size)/stride) + 1
     # patch_y_moves = math.floor((cols - patch_size)/stride) + 1
-    train_size = 10
-    train_patched_data (X_train[:,0:train_size], T_train[:,0:train_size], X_test, T_test, all_idx, radius=patch_size, stride=stride, debug=True, train=False)
+    train_size = 50000
+    train_patched_data (X_train[:,0:train_size], T_train[:,0:train_size], X_test, T_test, all_idx, radius=patch_size, stride=stride, debug=False, train=False)
     
 if __name__ == '__main__':
     main()
