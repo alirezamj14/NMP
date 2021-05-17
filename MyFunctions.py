@@ -128,7 +128,7 @@ def show_image(samples, sorted_ind, save_name):
             # ax = fig.add_subplot(3, len(percentage), i)
             params = {'interpolation': 'nearest'}
             imgplot = plt.imshow(image)
-            plt.imshow(f_image, 'Blues', interpolation='nearest', alpha=0.4)
+            plt.imshow(f_image, 'viridis', interpolation='nearest', alpha=0.5)
             ax.set_title(str(int(p * 100))+"%")
             plt.axis('off')
             i = i + 1

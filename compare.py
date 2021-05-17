@@ -72,8 +72,10 @@ class CNNModel:
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run NMP")
-    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
-    parser.add_argument("--algo", default="BART", help="The algorithm used for feature selection")
+    parser.add_argument("--reduced_inference", default="True", help="If comparision subset is reduced according to paper")
+    parser.add_argument("--J", default="1000", help="Comparision subset")
+    parser.add_argument("--data", default="CIFAR-10", help="Input dataset available as the paper shows")
+    parser.add_argument("--algo", default="RF", help="The algorithm used for feature selection")
     parser.add_argument("--tree_size", default="20", help="The number of trees used in BART or RF")
     parser.add_argument("--MC_Num", default="10", help="The number of MC simulations done")
     parser.add_argument("--deeplift_sample_size", default="10", help="The number of samples chosen from deeplift for explaining in each MC simulation")
@@ -98,16 +100,43 @@ def prepare_data(args):
         T_test =  loadmat("./mat_files/MNIST.mat")["test_y"].astype(np.float32)
         with open('./parameters/MNIST_sorted_ind.pkl', 'rb') as f:
              indices = pickle.load(f) 
-        
-                    
+
+        if args.reduced_inference == "True":
+            J_subset = np.random.choice(X_train.shape[1], int(args.J))
+            X_train = X_train[:,J_subset]
+            T_train = T_train[:,J_subset]
+
         if args.algo=="RF":
-            return indices['sorted_ind'][:300], X_train.T[:10000], X_test.T[:3000], T_train.T[:10000], T_test.T[:3000]
+            return indices['sorted_ind'][:300], X_train.T, X_test.T, T_train.T, T_test.T
         elif args.algo=="BART" or args.algo=="GAM":
             T_train = np.asarray([np.argmax(t, axis=None, out=None) for t in T_train.T])/10.0
             T_test = np.asarray([np.argmax(t, axis=None, out=None) for t in T_test.T])/10.0
             return indices['sorted_ind'][:300], X_train.T, X_test.T, T_train, T_test
         else:
             return indices['sorted_ind'][:300], X_train.T, X_test.T, T_train.T, T_test.T
+
+    if args.data=="CIFAR-10":
+        X_train =  loadmat("./mat_files/CIFAR-10.mat")["train_x"].astype(np.float32)
+        X_test =  loadmat("./mat_files/CIFAR-10.mat")["test_x"].astype(np.float32)
+        T_train =  loadmat("./mat_files/CIFAR-10.mat")["train_y"].astype(np.float32)
+        T_test =  loadmat("./mat_files/CIFAR-10.mat")["test_y"].astype(np.float32)
+        with open('./parameters/MNIST_sorted_ind.pkl', 'rb') as f:
+             indices = pickle.load(f) 
+
+        if args.reduced_inference == "True":
+            J_subset = np.random.choice(X_train.shape[1], int(args.J))
+            X_train = X_train[:,J_subset]
+            T_train = T_train[:,J_subset]
+
+        if args.algo=="RF":
+            return indices['sorted_ind'][:300], X_train.T, X_test.T, T_train.T, T_test.T
+        elif args.algo=="BART" or args.algo=="GAM":
+            T_train = np.asarray([np.argmax(t, axis=None, out=None) for t in T_train.T])/10.0
+            T_test = np.asarray([np.argmax(t, axis=None, out=None) for t in T_test.T])/10.0
+            return indices['sorted_ind'][:300], X_train.T, X_test.T, T_train, T_test
+        else:
+            return indices['sorted_ind'][:300], X_train.T, X_test.T, T_train.T, T_test.T
+
     
     if args.data=="BOSTON":
         from sklearn.datasets import load_boston
@@ -282,7 +311,7 @@ def create_model(args, file_path, model, X_train, T_train):
 def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, model_fpsr, model_fnsr, model_msfe, model_mspe, model_card, model_nme_train, model_nme_test):
     log_params = False
     file_path_prefix = "./parameters/"
-              
+
     start_time = time.time()
     if args.algo=="RF":      
         file_path = file_path_prefix + args.data + "/" + args.algo + "-" + str(i) + ".joblib"
@@ -292,11 +321,12 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         importance_vals = model.feature_importances_
         
         # Choose features which has 1% importance according to paper: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6660200/ 
-        S_hat = np.argwhere(importance_vals > 0.005).flatten()
+        S_hat = np.argwhere(importance_vals > 0.00).flatten()
         
-        if args.data=="MNIST": # Take 40% features of MNIST only
+        if args.data=="MNIST" or args.data=="CIFAR-10": # Take 40% features of MNIST only
             file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".joblib"
-            S_hat = np.argsort(importance_vals)[::-1][:315].flatten() #40% features
+            n_sub_feat_size = int(X_train.shape[1]*0.4)
+            S_hat = np.argsort(importance_vals)[::-1][:n_sub_feat_size].flatten() #40% features
             model = RandomForestRegressor(n_estimators=100) 
             model = create_model(args, file_path, model, X_train[:,S_hat], T_train)
             X_train = X_train[:,S_hat]
@@ -357,7 +387,7 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         total_val = np.sum(np.sum(np.abs(shap_values), axis=0), axis=0).flatten()
         S_hat = total_val.argsort()[::-1]
 
-        if args.data=="MNIST": # Take 40% features of MNIST only
+        if args.data=="MNIST" or args.data=="CIFAR-10": # Take 40% features of MNIST only
             X_train = x_train[:,S_hat]
             X_test = x_test[:,S_hat]
             X_train = X_train.reshape(X_train.shape[0], 28, 28)
@@ -366,7 +396,8 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
             X_train = np.expand_dims(X_train, -1)
             X_test = np.expand_dims(X_test, -1)
             file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".h5"
-            S_hat = total_val.argsort()[::-1][:315] #40% features
+            n_sub_feat_size = int(X_train.shape[1]*0.4)
+            S_hat = total_val.argsort()[::-1][:n_sub_feat_size] #40% features
             model_new = CNNModel(num_classes, input_shape).create_cnn_model()
             model_new.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
             model = create_model(args, file_path, model_new, X_train, T_train)
@@ -399,9 +430,10 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         
         S_hat = sorted(model.importance, key=model.importance.get)[::-1]
         
-        if args.data=="MNIST": # Take 40% features of MNIST only
+        if args.data=="MNIST" or args.data=="CIFAR-10": # Take 40% features of MNIST only
             file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".joblib"
-            S_hat = sorted(model.importance, key=model.importance.get)[::-1][:315] #40% features
+            n_sub_feat_size = int(X_train.shape[1]*0.4)
+            S_hat = sorted(model.importance, key=model.importance.get)[::-1][:n_sub_feat_size] #40% features
             model = XBART(num_trees = int(args.tree_size), num_sweeps = 20, burnin = 15, verbose = True, parallel = True)
             X_train = pd.DataFrame(x_train[:,S_hat])
             X_test = pd.DataFrame(x_test[:,S_hat])
@@ -431,26 +463,27 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
 
     elif args.algo=="LASSO":
         file_path = file_path_prefix + args.data + "/" + args.algo + "-" + str(i) + ".joblib"
-
+        
         #T_train = np.argmax(T_train, axis=1)
         #T_test = np.argmax(T_test, axis=1)
 
-        model = linear_model.Lasso(alpha=0.01, max_iter=50000)
+        model = linear_model.Lasso(alpha=0.01, max_iter=5000)
         model = create_model(args, file_path, model, X_train, T_train)
 
         S_hat = np.argsort(model.coef_)
         
-        if args.data=="MNIST": # Take 40% features of MNIST only
+        if args.data=="MNIST" or args.data=="CIFAR-10": # Take 40% features of MNIST only
             file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".joblib"
-            S_hat = np.argsort(model.coef_)[::-1][:315].flatten() #40% features
-            model = linear_model.Lasso(alpha=0.01, tol=1e-6, max_iter=5000)
+            n_sub_feat_size = int(X_train.shape[1]*0.4)
+            S_hat = np.argsort(model.coef_)[::-1][:n_sub_feat_size].flatten() #40% features
+            model = linear_model.Lasso(alpha=0.01, max_iter=5000)
             model = create_model(args, file_path, model, X_train[:,S_hat], T_train)
             X_train = X_train[:,S_hat]
             X_test = X_test[:,S_hat]
 
         # Ugly hack otherwise vector norm not calculated
-        T_train = T_train.reshape(X_train.shape[0], 1)
-        T_test = T_test.reshape(X_test.shape[0], 1)
+        #T_train = T_train.reshape(X_train.shape[0], 1)
+        #T_test = T_test.reshape(X_test.shape[0], 1)
 
         log_params = True
     

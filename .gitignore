@@ -3,6 +3,7 @@ parameters/GRAVITATION/
 parameters/MNIST/
 parameters/ARTIFICIAL/
 parameters/BOSTON/
+parameters/CIFAR-10/
 x_old_files/
 __pycache__/
 __pycache__/SSFN.cpython-37.pyc

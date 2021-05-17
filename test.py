@@ -11,6 +11,14 @@ import random
 import pandas as pd
 from MyFunctions import *
 
+def choose_patched_features(size, rows, cols, patch_rows = 4, patch_cols = 4):
+    S_hat = []
+    for i in range(size):
+        for j in range(patch_rows):
+            for k in range(patch_cols):
+                S_hat.append((patch_rows*rows[i] + j)*28 + patch_cols*cols[i] + k%4) 
+    return S_hat
+
 # Features from deeplift
 S_hat = np.array([318, 403, 290, 375, 210, 513, 317, 346, 402, 345, 570, 514, 212,
        457, 404, 263, 374, 376, 401, 319, 373, 291, 400, 208, 430, 433,
@@ -91,13 +99,7 @@ with open('./parameters/MNIST_sorted.pkl', 'rb') as f:
 rows = [1, 3, 3, 2, 4, 2, 3, 4, 3, 5, 5, 3, 3, 5, 2, 4, 4, 4, 2, 6, 2, 4, 0, 1, 2, 3, 5, 1, 0, 0, 5, 0, 6, 2, 0, 6, 1, 5, 4, 5, 1, 0, 1, 6, 1, 6, 0, 6, 6]
 cols = [4, 3, 1, 4, 2, 2, 4, 3, 5, 2, 4, 6, 2, 1, 3, 5, 4, 6, 1, 2, 6, 1, 1, 3, 5, 0, 3, 1, 6, 4, 6, 5, 4, 0, 2, 0, 5, 5, 0, 0, 0, 0, 2, 6, 6, 5, 3, 1, 3]
 
-S_hat = []
-patch_rows = 4
-patch_cols = 4
-for i in range(7*7):
-    for j in range(patch_rows):
-        for k in range(patch_cols):
-            S_hat.append((patch_rows*rows[i] + k-1)*28 + patch_cols*cols[i] + j%4) 
+S_hat = choose_patched_features(7*7, rows, cols, patch_rows = 4, patch_cols = 4)
 
 show_image(x, S_hat[0:300], "test_nmp_300_4x4")
 
@@ -122,13 +124,7 @@ cols = [4,4,4,4,4,4,8,9,10,11,12,5,6,7,8,7,9,6,2,8,6,11,4,7
 ,9,12,9,2,1,10,2,7,2,4,11,7,2,9,6,7,0,0,7,10,12,3,13,6
 ,4,5,5,10]
 
-S_hat = []
-patch_rows = 2
-patch_cols = 2
-for i in range(14*14):
-    for j in range(patch_rows):
-        for k in range(patch_cols):
-            S_hat.append((patch_rows*rows[i] + k-1)*28 + patch_cols*cols[i] + j%4) 
+S_hat = choose_patched_features(14*14, rows, cols, patch_rows = 2, patch_cols = 2)
 
 show_image(x, S_hat[0:300], "test_nmp_300_2x2")
 
@@ -233,3 +229,10 @@ S_hat_rf_mnist = np.array([102, 123, 130, 131, 132, 133, 148, 149, 150, 152, 153
        691, 707])
 
 show_image(x, S_hat_rf_mnist[0:300], "test_rf_300")
+
+rows = [5, 6, 6, 4, 6, 2, 6, 2, 4, 5, 2, 0, 0, 2, 0, 4, 4, 3, 6, 5]
+cols = [6, 2, 4, 5, 6, 5, 0, 2, 2, 2, 3, 3, 5, 6, 1, 4, 6, 0, 3, 5]
+#S_hat = choose_patched_features(49, patch_rows = 4, patch_cols = 4)
+S_hat = choose_patched_features(20, rows, cols, patch_rows = 4, patch_cols = 4)
+
+show_image(x, S_hat[0:300], "test_nmp_cnn_300_4x4")
