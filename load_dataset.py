@@ -103,6 +103,7 @@ def prepare_cifar10():
     T_test=  cifar10["test_y"].astype(np.float32)
     return X_train, X_test, T_train, T_test
 
+
 def prepare_satimage():
     X_train = loadmat("./mat_files/Satimage.mat")["train_x"].astype(np.float32)
     T_train = loadmat("./mat_files/Satimage.mat")["train_y"].astype(np.float32)
@@ -168,7 +169,6 @@ def prepare_Boston():
 
     X, T = load_boston(return_X_y=True)
     X_train, X_test, T_train, T_test = train_test_split(X, T, test_size=0.33, random_state=21)
-    S = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     fExtra=100
     X_train = np.concatenate((X_train, 10*np.random.rand(X_train.shape[0],fExtra)+10), axis=1)
     X_test = np.concatenate((X_test, 10*np.random.rand(X_test.shape[0],fExtra)+10), axis=1)
@@ -179,3 +179,19 @@ def prepare_Boston():
     X_test = (X_test - X_test.mean(axis=0)) / np.std(X_test, axis=0)
 
     return X_train.T, X_test.T, T_train.T, T_test.T
+
+
+def prepare_airfoil():
+    X_train = loadmat("./mat_files/Airfoil.mat")["X_train"].astype(np.float32)
+    T_train = loadmat("./mat_files/Airfoil.mat")["T_train"].astype(np.float32)
+    X_test = loadmat("./mat_files/Airfoil.mat")["X_test"].astype(np.float32)
+    T_test= loadmat("./mat_files/Airfoil.mat")["T_test"].astype(np.float32)
+
+    X_train = (X_train - X_train.mean(axis=0)) / np.std(X_train, axis=0)
+    X_test = (X_test - X_test.mean(axis=0)) / np.std(X_test, axis=0)
+
+    fExtra=500
+    X_train = np.concatenate((X_train, np.random.randn(X_train.shape[0],fExtra)), axis=1)
+    X_test = np.concatenate((X_test, np.random.randn(X_test.shape[0],fExtra)), axis=1)
+    
+    return X_train, X_test, T_train,  T_test
