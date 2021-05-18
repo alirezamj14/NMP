@@ -181,7 +181,7 @@ def prepare_Boston():
     return X_train.T, X_test.T, T_train.T, T_test.T
 
 
-def prepare_airfoil():
+def prepare_Airfoil():
     X_train = loadmat("./mat_files/Airfoil.mat")["X_train"].astype(np.float32)
     T_train = loadmat("./mat_files/Airfoil.mat")["T_train"].astype(np.float32)
     X_test = loadmat("./mat_files/Airfoil.mat")["X_test"].astype(np.float32)
