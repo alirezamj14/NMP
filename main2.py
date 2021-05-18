@@ -12,7 +12,7 @@ from joblib import Parallel, delayed
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run progressive learning")
-    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="Airfoil", help="Input dataset available as the paper shows")
     parser.add_argument("--lam", type=float, default=10**(2), help="Reguralized parameters on the least-square problem")
     parser.add_argument("--mu", type=float, default=10**(3), help="Parameter for ADMM")
     parser.add_argument("--kMax", type=int, default=100, help="Iteration number of ADMM")
@@ -47,6 +47,8 @@ def define_dataset(args):
         X_train, X_test, T_train,  T_test  = prepare_artificial()
     elif args.data == "Boston":
         X_train, X_test, T_train,  T_test  = prepare_Boston()
+    elif args.data == "Airfoil":
+        X_train, X_test, T_train,  T_test  = prepare_Airfoil()
     return X_train, X_test, T_train, T_test
 
 

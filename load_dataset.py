@@ -194,4 +194,4 @@ def prepare_Airfoil():
     X_train = np.concatenate((X_train, np.random.randn(X_train.shape[0],fExtra)), axis=1)
     X_test = np.concatenate((X_test, np.random.randn(X_test.shape[0],fExtra)), axis=1)
     
-    return X_train, X_test, T_train,  T_test
+    return X_train.T, X_test.T, T_train.T,  T_test.T
