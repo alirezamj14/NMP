@@ -44,7 +44,7 @@ def define_dataset(args):
         X_train, X_test, T_train,  T_test  = prepare_Ohm()
     elif args.data == "NN":
         X_train, X_test, T_train,  T_test  = prepare_NN()
-    elif args.data == "artificial":
+    elif args.data == "Artificial":
         X_train, X_test, T_train,  T_test  = prepare_artificial()
     return X_train, X_test, T_train, T_test
 
@@ -277,6 +277,14 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
 
     eta = args.eta
 
+    if args.flag == "given_order":
+        best_ind_given = args.best_ind
+
+    best_ind_true = [1, 0, 3, 2, 4] 
+    best_ind_reversed = [4, 2, 3, 0, 1]
+    best_ind_random = np.random.choice([0,1,2,3,4], 5, replace=False)
+    k = 0
+
     J = SSFN_hparameters["J"]
     Pextra = SSFN_hparameters["Pextra"]
     data = SSFN_hparameters["data"]
@@ -307,7 +315,7 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
     # train_error, test_error = SSFN( X_train, X_test, T_train, T_test, SSFN_hparameters)
 
     P=X_train.shape[0]
-    search_ind = range(P)
+    search_ind = np.arange(P)
     train_nme_sorted = np.array([])
     test_nme_sorted = np.array([])
     train_mse_sorted = np.array([])
@@ -315,6 +323,16 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
     sorted_ind = np.array([],  dtype=int)
 
     while len(search_ind) > 0:
+
+        if len(test_nme_sorted) > 1:
+            # break
+            if len(sorted_ind) == 5:
+                break
+            # if np.abs(test_nme_array[i] - test_nme_sorted[-1])/np.abs(test_nme_sorted[-1]) < eta or np.abs(test_nme_array[i]) <= np.abs(test_nme_sorted[-1]):
+            # if np.abs(test_nme_array[i] - test_nme_sorted[-1])/np.abs(test_nme_sorted[-1]) > eta and np.abs(test_nme_array[i]) <= np.abs(test_nme_sorted[-1]):
+            #     break
+                # pass
+
         train_nme_array = np.array([])
         test_nme_array = np.array([])
         train_mse_array = np.array([])
@@ -326,8 +344,8 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
             else:
                 X_tr = X_train[[i],:]
                 X_ts = X_test[[i],:]
-            # train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
-            train_nme, test_nme, train_mse, test_mse = MLP( X_tr, X_ts, T_train, T_test, data)
+            train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+            # train_nme, test_nme, train_mse, test_mse = MLP( X_tr, X_ts, T_train, T_test, data)
             train_nme_array = np.append(train_nme_array, train_nme)
             test_nme_array = np.append(test_nme_array, test_nme)
             train_mse_array = np.append(train_mse_array, train_mse)
@@ -340,13 +358,12 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
                 i = np.argmin(test_nme_array)
         else:
             i = np.argmin(test_nme_array)
-
-        if len(test_nme_sorted) > 1:
-            # break
-            # if np.abs(test_nme_array[i] - test_nme_sorted[-1])/np.abs(test_nme_sorted[-1]) < eta or np.abs(test_nme_array[i]) <= np.abs(test_nme_sorted[-1]):
-            if np.abs(test_nme_array[i] - test_nme_sorted[-1])/np.abs(test_nme_sorted[-1]) > eta and np.abs(test_nme_array[i]) <= np.abs(test_nme_sorted[-1]):
-                break
-                # pass
+            if args.flag == "given_order":
+                i = np.where(search_ind == best_ind_given[k])
+                k = k + 1
+            # i = np.where(search_ind == best_ind_reversed[k])
+            # i = np.where(search_ind == best_ind_random[k])
+            
 
         best_ind = search_ind[i]
         train_nme_sorted = np.append(train_nme_sorted, train_nme_array[i])
@@ -356,7 +373,7 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
         sorted_ind = np.append(sorted_ind, best_ind)
         search_ind = np.delete(search_ind, i)
     
-        print(sorted_ind)
+        # print(sorted_ind)
         # print(str(round(len(sorted_ind)/P * 100,2))+"%")
 
     # MyFPSR = FPSR([0, 1, 2],sorted_ind[0:3]) 
@@ -404,7 +421,7 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
         plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
         plt.close()
 
-    return sorted_ind, train_nme_sorted[-1], test_nme_sorted[-1], train_mse_sorted[-1], test_mse_sorted[-1]
+    return sorted_ind, train_nme_sorted[-1], test_nme_sorted, train_mse_sorted[-1], test_mse_sorted[-1]
 
 def MonteCarlo_NMP(J,Pextra,LA,args):
     """[This function is used for parallel processing when doing Monte Carlo trials. 
@@ -431,16 +448,20 @@ def MonteCarlo_NMP(J,Pextra,LA,args):
         true_ind = [0,1]
     elif data == "NN":
         true_ind = np.arange(0,50)
+    elif data == "Artificial":
+        true_ind = np.arange(0,50)
 
     miss_count = 0 
 
     for iteration in np.arange(1,MC_Num+1):
         # print("J = "+str(J)+", Itration "+str(iteration))
         X_train, X_test, T_train, T_test = define_dataset(args)
-        X_train = X_train[:,:int(round(0.9*J))] 
-        T_train = T_train[:,:int(round(0.9*J))]
-        X_test = X_test[:,:int(round(0.1*J))] 
-        T_test = T_test[:,:int(round(0.1*J))]
+
+        J_subset = np.random.choice(X_train.shape[1], J)
+        X_train = X_train[:,J_subset] 
+        T_train = T_train[:,J_subset]
+        # X_test = X_test[:,:int(round(0.1*J))] 
+        # T_test = T_test[:,:int(round(0.1*J))]
 
         Ntr = X_train.shape[1]
         Nts = X_test.shape[1]
@@ -461,7 +482,7 @@ def MonteCarlo_NMP(J,Pextra,LA,args):
                 else:
                     X_tr = X_train[[i],:]
                     X_ts = X_test[[i],:]
-                train_error, test_error, _, _ = SSFN(X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+                train_error, test_error, _, _, _, _ = SSFN(X_tr, X_ts, T_train, T_test, SSFN_hparameters)
                 train_error_array = np.append(train_error_array, train_error)
                 test_error_array = np.append(test_error_array, test_error)
                 
@@ -501,21 +522,26 @@ def acc_vs_J(_logger,args):
     SampleSize = np.arange(50,1050,50)  # [100,1000,10000]
     LA = "None"
 
-    Pextra = 8
-    args.data = "Ohm"
-    _logger.info("The dataset we use is {}".format(args.data))
-    accuracy_Ohm = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
+    # Pextra = 8
+    # args.data = "Ohm"
+    # _logger.info("The dataset we use is {}".format(args.data))
+    # accuracy_Ohm = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
     
-    Pextra = 8
-    args.data = "Planck"
-    _logger.info("The dataset we use is {}".format(args.data))
-    accuracy_Planck = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
+    # Pextra = 8
+    # args.data = "Planck"
+    # _logger.info("The dataset we use is {}".format(args.data))
+    # accuracy_Planck = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
     
-    Pextra = 7
-    args.data = "Gravitation"
-    _logger.info("The dataset we use is {}".format(args.data))
-    accuracy_Gravitation = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
+    # Pextra = 7
+    # args.data = "Gravitation"
+    # _logger.info("The dataset we use is {}".format(args.data))
+    # accuracy_Gravitation = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
 
+    Pextra = 0
+    args.data = "Artificial"
+    _logger.info("The dataset we use is {}".format(args.data))
+    accuracy_Artificial = Parallel(n_jobs=1)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
+    print(accuracy_Artificial)
     # Pextra = 50
     # args.data = "NN"
     # _logger.info("The dataset we use is {}".format(args.data))
@@ -540,26 +566,26 @@ def acc_vs_J(_logger,args):
     # _logger.info("The dataset we use is {}".format(args.data))
     # accuracy_NN_LA = Parallel(n_jobs=20)(delayed(MonteCarlo_NMP)(J,Pextra,LA,args) for J in SampleSize)
     
-    csfont = {'fontname':'sans-serif'}
-    plt.subplots()
-    plt.plot(SampleSize, accuracy_Ohm, 'r-', label="Ohm's law")
-    plt.plot(SampleSize, accuracy_Planck, 'b-', label="Planck's law")
-    # plt.plot(SampleSize, accuracy_NN_LA, 'g:', label="NN model LookAhead")
-    plt.plot(SampleSize, accuracy_Gravitation, 'g:', label="Gravitation law")
-    plt.legend(loc='best')
-    plt.grid()
-    plt.xlabel("Sample Size (J)",fontdict=csfont)
-    plt.ylabel("Detection Accuracy (%)",fontdict=csfont)
-    # plt.title("SSFN", loc='center')
-    # plt.savefig(result_path +"Acc_vs_J_"+args.data+".png")
-    plt.savefig(result_path +"Acc_vs_J.png")
-    plt.close()
+    # csfont = {'fontname':'sans-serif'}
+    # plt.subplots()
+    # plt.plot(SampleSize, accuracy_Ohm, 'r-', label="Ohm's law")
+    # plt.plot(SampleSize, accuracy_Planck, 'b-', label="Planck's law")
+    # # plt.plot(SampleSize, accuracy_NN_LA, 'g:', label="NN model LookAhead")
+    # plt.plot(SampleSize, accuracy_Gravitation, 'g:', label="Gravitation law")
+    # plt.legend(loc='best')
+    # plt.grid()
+    # plt.xlabel("Sample Size (J)",fontdict=csfont)
+    # plt.ylabel("Detection Accuracy (%)",fontdict=csfont)
+    # # plt.title("SSFN", loc='center')
+    # # plt.savefig(result_path +"Acc_vs_J_"+args.data+".png")
+    # plt.savefig(result_path +"Acc_vs_J.png")
+    # plt.close()
 
-    output_dic = {}
-    output_dic["accuracy_Ohm"]=accuracy_Ohm 
-    output_dic["accuracy_Planck"]=accuracy_Planck
-    output_dic["accuracy_Gravitation"]=accuracy_Gravitation
-    save_dic(output_dic, parameters_path, "three_laws", "accuracy")
+    # output_dic = {}
+    # output_dic["accuracy_Ohm"]=accuracy_Ohm 
+    # output_dic["accuracy_Planck"]=accuracy_Planck
+    # output_dic["accuracy_Gravitation"]=accuracy_Gravitation
+    # save_dic(output_dic, parameters_path, "three_laws", "accuracy")
 
 def acc_vs_P(_logger,args):
     """[This function plots NMP detection accuracy versus total number of input features (P), refer to Figure 4 in the Overleaf.]
@@ -716,11 +742,11 @@ def main():
     # plot_MNIST(_logger,args)
     # my_plot(_logger,args)
 
-def NMP_train(X_train, X_test, T_train, T_test, args):
+def NMP_train(_logger, X_train, X_test, T_train, T_test, args):
     # args = define_parser()
 
-    sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat_window(X_train, X_test, T_train, T_test, args)
-    # sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat(X_train, X_test, T_train, T_test, args)
+    # sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat_window(X_train, X_test, T_train, T_test, args)
+    sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat(X_train, X_test, T_train, T_test, args)
     # acc_vs_J(_logger,args)
     # acc_vs_P(_logger,args)
     # plot_MNIST(_logger,args)

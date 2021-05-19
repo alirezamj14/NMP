@@ -21,16 +21,15 @@ def prepare_artificial():
 
     T_train = (10 * np.sin(np.maximum(X_train[0,:], X_train[1,:])) + (np.maximum(np.maximum(X_train[2,:], X_train[3,:]), X_train[4,:]))**3 )/( 1 + (X_train[0,:] + X_train[4,:])**2 ) \
             + np.sin(0.5 * X_train[2,:]) * (1 + np.exp(X_train[3,:] - 0.5 * X_train[2,:])) \
-            + X_train[2,:]**2 + 2 * np.sin(X_train[3,:]) + 2 * X_train[4,:] + epsilon
-
+            + X_train[2,:]**2 + 2 * np.sin(X_train[3,:]) + 2 * X_train[4,:] + epsilon * 0
+ 
     T_test = (10 * np.sin(np.maximum(X_test[0,:], X_test[1,:])) + (np.maximum(np.maximum(X_test[2,:], X_test[3,:]), X_test[4,:]))**3 )/( 1 + (X_test[0,:] + X_test[4,:])**2 ) \
             + np.sin(0.5 * X_test[2,:]) * (1 + np.exp(X_test[3,:] - 0.5 * X_test[2,:])) \
-            + X_test[2,:]**2 + 2 * np.sin(X_test[3,:]) + 2 * X_test[4,:] + epsilon
+            + X_test[2,:]**2 + 2 * np.sin(X_test[3,:]) + 2 * X_test[4,:] + epsilon * 0
     
     return X_train, X_test, T_train, T_test
 
 def prepare_NN():
-    # Ohm's law: https://en.wikipedia.org/wiki/Ohm%27s_law
 
     N = 10000         # Number of samples  
     Ntr = 9000       # Number of training samples 
@@ -52,7 +51,7 @@ def prepare_Ohm():
 
     N=10000         # Number of samples  
     Ntr=9000       # Number of training samples 
-    fExtra=0          # Number of extra random features
+    fExtra=8          # Number of extra random features
     V = 10*np.random.rand(1, N)+10       # voltage
     R = 10*np.random.rand(1, N)+10       # resistance
     I = V/R    # current
@@ -69,7 +68,7 @@ def prepare_Planck():
 
     N=10000         # Number of samples  
     Ntr=9000       # Number of training samples
-    fExtra=0           # Number of extra random features
+    fExtra=8           # Number of extra random features
     v = 10*np.random.rand(1, N)+10       # frequency
     T = 10*np.random.rand(1, N)+10       # absolute temperature
     B = 2 * (v**3) * (1/(np.exp(v/T)-1))    # spectral radiance of a body
@@ -83,7 +82,7 @@ def prepare_Planck():
 def prepare_Gravitation():
     N=10000         # Number of samples  
     Ntr=9000       # Number of training samples  
-    fExtra=0           # Number of extra random features
+    fExtra=7           # Number of extra random features
     m1=10*np.random.rand(1, N)+10
     m2=10*np.random.rand(1, N)+10
     r=10*np.random.rand(1, N)+10
