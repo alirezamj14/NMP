@@ -74,8 +74,8 @@ def define_parser():
     parser = argparse.ArgumentParser(description="Run NMP")
     parser.add_argument("--reduced_inference", default="True", help="If comparision subset is reduced according to paper")
     parser.add_argument("--J", default="1000", help="Comparision subset")
-    parser.add_argument("--data", default="CIFAR-10", help="Input dataset available as the paper shows")
-    parser.add_argument("--algo", default="RF", help="The algorithm used for feature selection")
+    parser.add_argument("--data", default="AIRFOIL", help="Input dataset available as the paper shows")
+    parser.add_argument("--algo", default="CORR", help="The algorithm used for feature selection")
     parser.add_argument("--tree_size", default="20", help="The number of trees used in BART or RF")
     parser.add_argument("--MC_Num", default="10", help="The number of MC simulations done")
     parser.add_argument("--deeplift_sample_size", default="10", help="The number of samples chosen from deeplift for explaining in each MC simulation")
@@ -115,29 +115,29 @@ def prepare_data(args):
         else:
             return indices['sorted_ind'][:300], X_train.T, X_test.T, T_train.T, T_test.T
 
-    if args.data=="CIFAR-10":
-        X_train =  loadmat("./mat_files/CIFAR-10.mat")["train_x"].astype(np.float32)
-        X_test =  loadmat("./mat_files/CIFAR-10.mat")["test_x"].astype(np.float32)
-        T_train =  loadmat("./mat_files/CIFAR-10.mat")["train_y"].astype(np.float32)
-        T_test =  loadmat("./mat_files/CIFAR-10.mat")["test_y"].astype(np.float32)
-        with open('./parameters/MNIST_sorted_ind.pkl', 'rb') as f:
-             indices = pickle.load(f) 
+    if args.data=="AIRFOIL":
+        X_train = loadmat("./mat_files/AIRFOIL.mat")["X_test"].astype(np.float32)
+        T_train = loadmat("./mat_files/AIRFOIL.mat")["T_test"].astype(np.float32)
+        X_test = loadmat("./mat_files/AIRFOIL.mat")["X_train"].astype(np.float32)
+        T_test= loadmat("./mat_files/AIRFOIL.mat")["T_train"].astype(np.float32)
 
-        if args.reduced_inference == "True":
-            J_subset = np.random.choice(X_train.shape[1], int(args.J))
-            X_train = X_train[:,J_subset]
-            T_train = T_train[:,J_subset]
+        X_train = (X_train - X_train.mean(axis=0)) / np.std(X_train, axis=0)
+        X_test = (X_test - X_test.mean(axis=0)) / np.std(X_test, axis=0)
+        
+        S = [0, 1, 2, 3, 4]
 
-        if args.algo=="RF":
-            return indices['sorted_ind'][:300], X_train.T, X_test.T, T_train.T, T_test.T
-        elif args.algo=="BART" or args.algo=="GAM":
-            T_train = np.asarray([np.argmax(t, axis=None, out=None) for t in T_train.T])/10.0
-            T_test = np.asarray([np.argmax(t, axis=None, out=None) for t in T_test.T])/10.0
-            return indices['sorted_ind'][:300], X_train.T, X_test.T, T_train, T_test
+        fExtra=500
+        X_train = np.concatenate((X_train, np.random.randn(X_train.shape[0],fExtra)), axis=1)
+        X_test = np.concatenate((X_test, np.random.randn(X_test.shape[0],fExtra)), axis=1)
+
+        T_train = T_train.reshape(-1,1)
+        T_test = T_test.reshape(-1,1)
+
+        if args.algo=="BART":
+            return S, X_train, X_test, T_train.flatten(), T_test.flatten()
         else:
-            return indices['sorted_ind'][:300], X_train.T, X_test.T, T_train.T, T_test.T
-
-    
+            return S, X_train, X_test, T_train, T_test
+ 
     if args.data=="BOSTON":
         from sklearn.datasets import load_boston
         X, T = load_boston(return_X_y=True)
@@ -446,6 +446,33 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
 
         log_params = True
 
+    elif args.algo=="POINTNET":
+        import torch
+        from torch.utils.data import DataLoader
+        import kaolin as kal
+        from kaolin import ClassificationEngine
+        from kaolin.datasets import ModelNet
+        from kaolin.models.PointNet import PointNetClassifier as PointNet
+        import kaolin.transforms as tfs
+
+        modelnet_path = './mat_files/ModelNet10'
+        categories = ['chair', 'sofa']
+        num_points = 1024
+        device = 'cuda'
+
+        transform = tfs.Compose([
+        tfs.TriangleMeshToPointCloud(num_samples=num_points),
+        tfs.NormalizePointCloud()
+        ])
+
+        train_loader = DataLoader(ModelNet(modelnet_path, 
+                                  categories=categories,
+                                  split='train', 
+                                  transform=transform, 
+                                  device=device),
+                                  batch_size=12, shuffle=True)
+
+
     elif args.algo=="GAM": # Note GAM doesn't work on MNIST properly
         file_path = file_path_prefix + args.data + "/" + args.algo + "-" + str(i) + ".joblib"
         
@@ -500,6 +527,13 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
 
         log_params = False
 
+    elif args.algo=="CORR":
+        S_hat = np.argsort(np.dot((X_train.T),T_train).T)[::-1].flatten()
+        model_fpsr[0,i] = FPSR(S,S_hat[0:len(S)])
+        model_fnsr[0,i] = FNSR(S,S_hat[0:len(S)])
+
+
+        log_params = False
     elif args.algo=="SPINN":
         # https://github.com/jjfeng/spinn
         log_params = False
@@ -510,8 +544,8 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
 
     if log_params:
         # Mean squared errors
-        model_msfe[0,i] = compute_mse(T_train, model.predict(X_train).reshape(T_train.shape))
-        model_mspe[0,i] = compute_mse(T_test, model.predict(X_test).reshape(T_test.shape))
+        model_msfe[0,i] = compute_mse_compare(T_train, model.predict(X_train).reshape(T_train.shape))
+        model_mspe[0,i] = compute_mse_compare(T_test, model.predict(X_test).reshape(T_test.shape))
         # Selection rate errors
         model_fpsr[0,i] = FPSR(S,S_hat[0:len(S)])
         model_fnsr[0,i] = FNSR(S,S_hat[0:len(S)])

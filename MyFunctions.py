@@ -40,6 +40,25 @@ def FNSR(S, S_hat):
     FNSR = len(temp) / len(S)
     return FNSR
 
+def compute_mse_compare(S, T):
+    """
+    compute Mean Squared Error: Training error  | Testing error
+
+    Parameters
+    ----------
+    S : np.ndarray
+    predicted matrix
+    T : np.ndarray
+    given matrix
+
+    Returns
+    ----------
+    mse : float
+    MSE value
+    """
+    mse = norm((S - T), 'fro') / T.shape[0]
+    return mse
+
 def compute_mse(S, T):
     """
     compute Mean Squared Error: Training error  | Testing error

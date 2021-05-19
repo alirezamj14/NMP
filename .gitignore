@@ -4,6 +4,7 @@ parameters/MNIST/
 parameters/ARTIFICIAL/
 parameters/BOSTON/
 parameters/CIFAR-10/
+parameters/AIRFOIL/
 x_old_files/
 __pycache__/
 __pycache__/SSFN.cpython-37.pyc
