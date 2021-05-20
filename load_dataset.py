@@ -174,8 +174,8 @@ def prepare_Boston():
     T_train = T_train.reshape(-1,1)
     T_test = T_test.reshape(-1,1)
     
-    X_train = (X_train - X_train.mean(axis=0)) / np.std(X_train, axis=0)
-    X_test = (X_test - X_test.mean(axis=0)) / np.std(X_test, axis=0)
+    # X_train = (X_train - X_train.mean(axis=0)) / np.std(X_train, axis=0)
+    # X_test = (X_test - X_test.mean(axis=0)) / np.std(X_test, axis=0)
 
     return X_train.T, X_test.T, T_train.T, T_test.T
 
