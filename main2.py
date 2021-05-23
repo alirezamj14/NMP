@@ -62,30 +62,7 @@ def main():
     sweep_eta = 0.01 * np.arange(1,11)
     sweep_J = np.arange(50, 1050, 50)
 
-    NMP_avg_FNSR_Artificial = [0.5, 0.14, 0.02, 0.02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]     # for a full test set
-    NMP_avg_FNSR_Gravitation = [0.29, 0.1733, 0.0633, 0.04, 0.033, 0.033, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    NMP_avg_FNSR_Planck = [0.15, 0.04, 0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    NMP_avg_FNSR_Ohm = [0.16, 0.105, 0.05, 0.03, 0, 0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-
-    FontSize = 18
-    result_path = "./results/"
-    csfont = {'fontname':'sans-serif'}
-    plt.subplots()
-    plt.plot(sweep_J, NMP_avg_FNSR_Planck, 'm--', label="Planck", linewidth=2)
-    plt.plot(sweep_J, NMP_avg_FNSR_Ohm, 'r-', label="Ohm", linewidth=2)
-    plt.plot(sweep_J, NMP_avg_FNSR_Gravitation, 'b:', label="Gravitation", linewidth=2)
-    plt.plot(sweep_J, NMP_avg_FNSR_Artificial, 'g-.', label="Artificial", linewidth=2)
-    plt.legend(loc='best', fontsize=FontSize)
-    plt.grid()
-    # plt.xlabel("Stopping threshold (eta)",fontdict=csfont, fontsize=FontSize)
-    plt.xlabel("Number of samples (J)",fontdict=csfont, fontsize=FontSize)
-    plt.ylabel("FNSR",fontdict=csfont, fontsize=FontSize)
-    # plt.title(data+", SSFNN", loc='center', fontsize=FontSize)
-    plt.xticks(fontsize=FontSize)
-    plt.yticks(fontsize=FontSize)
-    plt.tight_layout()
-    plt.savefig(result_path +"FNSR_vs_J"+".png",dpi=600)
-    plt.close()
+    
 
     NMP_avg_FPSR = np.array([])
     NMP_avg_FNSR = np.array([])    
@@ -208,54 +185,53 @@ def main():
 
     
     
-    NMP_avg_FNSR_Artificial = [0.5, 0.14, 0.02, 0.02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]     # for a full test set
-    NMP_avg_FNSR_Gravitation = [0.29, 0.1733, 0.0633, 0.04, 0.033, 0.033, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    NMP_avg_FNSR_Planck = [0.15, 0.04, 0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    NMP_avg_FNSR_Ohm = [0.16, 0.105, 0.05, 0.03, 0, 0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    # NMP_avg_FNSR_Artificial = [0.5, 0.14, 0.02, 0.02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]     # for a full test set
+    # NMP_avg_FNSR_Gravitation = [0.29, 0.1733, 0.0633, 0.04, 0.033, 0.033, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    # NMP_avg_FNSR_Planck = [0.15, 0.04, 0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    # NMP_avg_FNSR_Ohm = [0.16, 0.105, 0.05, 0.03, 0, 0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    # FontSize = 18
+    # result_path = "./results/"
+    # csfont = {'fontname':'sans-serif'}
+    # plt.subplots()
+    # plt.plot(sweep_J, NMP_avg_FNSR_Planck, 'm--', label="Planck", linewidth=2)
+    # plt.plot(sweep_J, NMP_avg_FNSR_Ohm, 'r-', label="Ohm", linewidth=2)
+    # plt.plot(sweep_J, NMP_avg_FNSR_Gravitation, 'b:', label="Gravitation", linewidth=2)
+    # plt.plot(sweep_J, NMP_avg_FNSR_Artificial, 'g-.', label="Artificial", linewidth=2)
+    # plt.legend(loc='best', fontsize=FontSize)
+    # plt.grid()
+    # # plt.xlabel("Stopping threshold (eta)",fontdict=csfont, fontsize=FontSize)
+    # plt.xlabel("Number of samples (J)",fontdict=csfont, fontsize=FontSize)
+    # plt.ylabel("FNSR",fontdict=csfont, fontsize=FontSize)
+    # # plt.title(data+", SSFNN", loc='center', fontsize=FontSize)
+    # plt.xticks(fontsize=FontSize)
+    # plt.yticks(fontsize=FontSize)
+    # plt.tight_layout()
+    # plt.savefig(result_path +"FNSR_vs_J"+".png",dpi=600)
+    # plt.close()
 
-    FontSize = 18
-    result_path = "./results/"
-    csfont = {'fontname':'sans-serif'}
-    plt.subplots()
-    plt.plot(sweep_J, NMP_avg_FNSR_Planck, 'm--', label="Planck", linewidth=2)
-    plt.plot(sweep_J, NMP_avg_FNSR_Ohm, 'r-', label="Ohm", linewidth=2)
-    plt.plot(sweep_J, NMP_avg_FNSR_Gravitation, 'b:', label="Gravitation", linewidth=2)
-    plt.plot(sweep_J, NMP_avg_FNSR_Artificial, 'g-.', label="Artificial", linewidth=2)
-    plt.legend(loc='best', fontsize=FontSize)
-    plt.grid()
-    # plt.xlabel("Stopping threshold (eta)",fontdict=csfont, fontsize=FontSize)
-    plt.xlabel("Number of samples (J)",fontdict=csfont, fontsize=FontSize)
-    plt.ylabel("FNSR",fontdict=csfont, fontsize=FontSize)
-    # plt.title(data+", SSFNN", loc='center', fontsize=FontSize)
-    plt.xticks(fontsize=FontSize)
-    plt.yticks(fontsize=FontSize)
-    plt.tight_layout()
-    plt.savefig(result_path +"FNSR_vs_J"+".png",dpi=600)
-    plt.close()
-
-    NMP_FullR_Ohm = [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1 , 1, 1, 1, 1, 1, 1, 1, 1]
-    NMP_FullR_Gravitation = [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    NMP_FullR_Planck = [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    NMP_FullR_Artificial = [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    FontSize = 18
-    result_path = "./results/"
-    csfont = {'fontname':'sans-serif'}
-    plt.subplots()
-    plt.plot(sweep_J, NMP_FullR_Planck, 'm--', label="Planck", linewidth=2)
-    plt.plot(sweep_J, NMP_FullR_Ohm, 'r-', label="Ohm", linewidth=2)
-    plt.plot(sweep_J, NMP_FullR_Gravitation, 'b:', label="Gravitation", linewidth=2)
-    plt.plot(sweep_J, NMP_FullR_Artificial, 'g-.', label="Artificial", linewidth=2)
-    plt.legend(loc='best', fontsize=FontSize)
-    plt.grid()
-    # plt.xlabel("Stopping threshold (eta)",fontdict=csfont, fontsize=FontSize)
-    plt.xlabel("Number of samples (J)",fontdict=csfont, fontsize=FontSize)
-    plt.ylabel("Full Recovery",fontdict=csfont, fontsize=FontSize)
-    # plt.title(data+", SSFNN", loc='center', fontsize=FontSize)
-    plt.xticks(fontsize=FontSize)
-    plt.yticks(fontsize=FontSize)
-    plt.tight_layout()
-    plt.savefig(result_path +"FullR_vs_J"+".png",dpi=600)
-    plt.close()
+    # NMP_FullR_Ohm = [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1 , 1, 1, 1, 1, 1, 1, 1, 1]
+    # NMP_FullR_Gravitation = [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    # NMP_FullR_Planck = [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    # NMP_FullR_Artificial = [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    # FontSize = 18
+    # result_path = "./results/"
+    # csfont = {'fontname':'sans-serif'}
+    # plt.subplots()
+    # plt.plot(sweep_J, NMP_FullR_Planck, 'm--', label="Planck", linewidth=2)
+    # plt.plot(sweep_J, NMP_FullR_Ohm, 'r-', label="Ohm", linewidth=2)
+    # plt.plot(sweep_J, NMP_FullR_Gravitation, 'b:', label="Gravitation", linewidth=2)
+    # plt.plot(sweep_J, NMP_FullR_Artificial, 'g-.', label="Artificial", linewidth=2)
+    # plt.legend(loc='best', fontsize=FontSize)
+    # plt.grid()
+    # # plt.xlabel("Stopping threshold (eta)",fontdict=csfont, fontsize=FontSize)
+    # plt.xlabel("Number of samples (J)",fontdict=csfont, fontsize=FontSize)
+    # plt.ylabel("Full Recovery",fontdict=csfont, fontsize=FontSize)
+    # # plt.title(data+", SSFNN", loc='center', fontsize=FontSize)
+    # plt.xticks(fontsize=FontSize)
+    # plt.yticks(fontsize=FontSize)
+    # plt.tight_layout()
+    # plt.savefig(result_path +"FullR_vs_J"+".png",dpi=600)
+    # plt.close()
 
     
 
