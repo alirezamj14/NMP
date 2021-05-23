@@ -16,7 +16,7 @@ def choose_patched_features(size, rows, cols, patch_rows = 4, patch_cols = 4):
     for i in range(size):
         for j in range(patch_rows):
             for k in range(patch_cols):
-                S_hat.append((patch_rows*rows[i] + j)*28 + patch_cols*cols[i] + k%4) 
+                S_hat.append((patch_rows*rows[i] + j)*28 + patch_cols*cols[i] + k%patch_cols) 
     return S_hat
 
 # Features from deeplift
@@ -92,10 +92,12 @@ show_image(x, S_hat[0:300], "test_deeplift_300")
 
 show_image(x, S_hat_bart_mnist[0:300], "test_bart_300")
 
-with open('./parameters/MNIST_sorted.pkl', 'rb') as f:
+with open('./parameters/MNIST_sorted_ind.pkl', 'rb') as f:
     indices = pickle.load(f)
 
-#show_image_old(x, indices['sorted_ind'], "test_nmp")
+S_hat = indices['sorted_ind']
+show_image(x, S_hat[0:300], "test_nmp_300_1x1")
+
 rows = [1, 3, 3, 2, 4, 2, 3, 4, 3, 5, 5, 3, 3, 5, 2, 4, 4, 4, 2, 6, 2, 4, 0, 1, 2, 3, 5, 1, 0, 0, 5, 0, 6, 2, 0, 6, 1, 5, 4, 5, 1, 0, 1, 6, 1, 6, 0, 6, 6]
 cols = [4, 3, 1, 4, 2, 2, 4, 3, 5, 2, 4, 6, 2, 1, 3, 5, 4, 6, 1, 2, 6, 1, 1, 3, 5, 0, 3, 1, 6, 4, 6, 5, 4, 0, 2, 0, 5, 5, 0, 0, 0, 0, 2, 6, 6, 5, 3, 1, 3]
 

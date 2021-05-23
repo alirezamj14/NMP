@@ -74,7 +74,7 @@ def define_parser():
     parser = argparse.ArgumentParser(description="Run NMP")
     parser.add_argument("--reduced_inference", default="True", help="If comparision subset is reduced according to paper")
     parser.add_argument("--J", default="1000", help="Comparision subset")
-    parser.add_argument("--data", default="AIRFOIL", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="BOSTON", help="Input dataset available as the paper shows")
     parser.add_argument("--algo", default="CORR", help="The algorithm used for feature selection")
     parser.add_argument("--tree_size", default="20", help="The number of trees used in BART or RF")
     parser.add_argument("--MC_Num", default="10", help="The number of MC simulations done")
@@ -528,7 +528,7 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         log_params = False
 
     elif args.algo=="CORR":
-        S_hat = np.argsort(np.dot((X_train.T),T_train).T)[::-1].flatten()
+        S_hat = np.argsort(abs(np.dot((X_train.T),T_train).T))[::-1].flatten()
         model_fpsr[0,i] = FPSR(S,S_hat[0:len(S)])
         model_fnsr[0,i] = FNSR(S,S_hat[0:len(S)])
 

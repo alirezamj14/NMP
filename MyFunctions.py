@@ -112,6 +112,7 @@ def show_image(samples, sorted_ind, save_name):
     result_path = "./results/"
     image = {}
     percentage = [0.2,0.4,0.6,0.8,1] # [0.2,0.4,0.6,0.8,1] # [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+    percentage_label = [0.08,0.16,0.24,0.32,.40]
     fig = plt.figure()
     gs1 = gridspec.GridSpec(len(samples), len(percentage))
     gs1.update(wspace=0.025, hspace=0.05) # set the spacing between axes.
@@ -119,6 +120,7 @@ def show_image(samples, sorted_ind, save_name):
     i = 0
     feature_len = len(sorted_ind)
     for x in samples:
+        idx = 0
         for p in percentage:
             y = np.zeros(x.shape)
             temp = int(round(p*feature_len))
@@ -148,9 +150,10 @@ def show_image(samples, sorted_ind, save_name):
             params = {'interpolation': 'nearest'}
             imgplot = plt.imshow(image)
             plt.imshow(f_image, 'viridis', interpolation='nearest', alpha=0.5)
-            ax.set_title(str(int(p * 100))+"%")
+            ax.set_title(str(int(percentage_label[idx] * 100))+"%")
             plt.axis('off')
             i = i + 1
+            idx = idx + 1
 
     plt.savefig(result_path +"Sample_image_MNIST_"+save_name+".png")
     plt.close()
