@@ -12,7 +12,7 @@ from joblib import Parallel, delayed
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run progressive learning")
-    parser.add_argument("--data", default="Artificial", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="Planck", help="Input dataset available as the paper shows")
     parser.add_argument("--lam", type=float, default=10**(2), help="Reguralized parameters on the least-square problem")
     parser.add_argument("--mu", type=float, default=10**(3), help="Parameter for ADMM")
     parser.add_argument("--kMax", type=int, default=100, help="Iteration number of ADMM")
@@ -56,83 +56,108 @@ def main():
     args = define_parser()
     _logger = define_logger()
     X_train, X_test, T_train, T_test = define_dataset(args)
-    _logger.info("The dataset we use is {}".format(args.data))
+    # _logger.info("The dataset we use is {}".format(args.data))
 
-    S = [0, 1,2,3,4] # 5, 6, 7, 8, 9, 10, 11, 12] # set of true relevant features
+    S = [0, 1] # 5, 6, 7, 8, 9, 10, 11, 12] # set of true relevant features
     sweep_eta = 0.01 * np.arange(1,11)
-    sweep_J = np.arange(50, 1050, 50)
+    sweep_J = np.arange(50, 500, 10)
 
-    
+    MC_Num=100
+    datasets = ["Planck", "Ohm", "Gravitation", "Artificial"]
 
-    NMP_avg_FPSR = np.array([])
-    NMP_avg_FNSR = np.array([])    
-    NMP_avg_PNME = np.array([])
-    NMP_avg_FNME = np.array([])    
-    NMP_avg_PMSE = np.array([])
-    NMP_avg_FMSE = np.array([])    
+    for data in datasets:
+        args.data = data
+        print("The dataset we use is " + data)
 
-    MC_Num=10
+        if data == "Planck":
+            args.S = [0,1]
+        elif data == "Ohm":
+            args.S = [0,1]
+        elif data == "Gravitation":
+            args.S = [0,1,2]
+        elif data == "Artificial":
+            args.S = [0,1,2,3,4]
 
-    for J in sweep_J:
-        args.eta = 0.005
-        # print("eta: "+ str(eta))
-        print("J: "+ str(J))
+        NMP_avg_FPSR = np.array([])
+        NMP_avg_FNSR = np.array([])    
+        NMP_avg_PNME = np.array([])
+        NMP_avg_FNME = np.array([])    
+        NMP_avg_PMSE = np.array([])
+        NMP_avg_FMSE = np.array([])
+        NMP_accuracy = np.array([]) 
 
-        NMP_NME_matrix = np.zeros((5, MC_Num))
-        NMP_NME_matrix_given = np.zeros((5, MC_Num))
-        NMP_FPSR = np.zeros((1, MC_Num))
-        NMP_FNSR = np.zeros((1, MC_Num))
-        NMP_PNME = np.zeros((1, MC_Num))
-        NMP_FNME = np.zeros((1, MC_Num))
-        NMP_PMSE = np.zeros((1, MC_Num))
-        NMP_FMSE = np.zeros((1, MC_Num))
+        for J in sweep_J:
+            args.eta = 0.06
+            # print("eta: "+ str(eta))
+            # print("J: "+ str(J))
 
-        for i in np.arange(0,MC_Num):
-            X_train, X_test, T_train, T_test = define_dataset(args)
-            J_train = np.random.choice(X_train.shape[1], int(round(0.9*J)), replace=False)
-            J_test = np.random.choice(X_test.shape[1], int(round(0.1*J)), replace=False)
-            # args.flag = "Not_given"
-            # S_hat, train_NME, test_NME, train_mse, test_mse  = NMP_train(_logger, X_train[:,J_train], X_test[:,:], T_train[:,J_train], T_test[:,:], args)       # set of selected features
-            args.flag = "given_order"
-            # args.best_ind = np.flip(S_hat)
-            args.best_ind = np.random.choice([0,1,2,3,4], 5, replace=False)
-            S_hat, _, test_NME_given, _, _  = NMP_train(_logger, X_train[:,J_train], X_test[:,:], T_train[:,J_train], T_test[:,:], args)
-            # S_hat, train_NME, test_NME, train_mse, test_mse  = NMP_train(X_train, X_test, T_train, T_test, args)       # set of selected features  
-            print(S_hat)
-            # print(S_hat_given)
+            NMP_NME_matrix = np.zeros((5, MC_Num))
+            NMP_NME_matrix_given = np.zeros((5, MC_Num))
+            NMP_FPSR = np.zeros((1, MC_Num))
+            NMP_FNSR = np.zeros((1, MC_Num))
+            NMP_PNME = np.zeros((1, MC_Num))
+            NMP_FNME = np.zeros((1, MC_Num))
+            NMP_PMSE = np.zeros((1, MC_Num))
+            NMP_FMSE = np.zeros((1, MC_Num))
 
-            NMP_FPSR[0,i] = FPSR(S,S_hat)
-            NMP_FNSR[0,i] = FNSR(S,S_hat)
-            # NMP_PNME[0,i] = test_NME
-            # NMP_FNME[0,i] = train_NME
-            # NMP_PMSE[0,i] = test_mse
-            # NMP_FMSE[0,i] = train_mse
+            miss_count = 0
 
-            # NMP_NME_matrix[:,i] = test_NME
-            NMP_NME_matrix_given[:,i] = test_NME_given
-            # print(NMP_NME_matrix)
-            # print(NMP_NME_matrix_given)
+            for i in np.arange(0,MC_Num):
+                X_train, X_test, T_train, T_test = define_dataset(args)
+                J_train = np.random.choice(X_train.shape[1], int(round(0.9*J)), replace=False)
+                J_test = np.random.choice(X_test.shape[1], int(round(0.1*J)), replace=False)
+                args.flag = "Not_given"
+                S_hat, train_NME, test_NME, train_mse, test_mse  = NMP_train(_logger, X_train[:,J_train], X_test[:,J_test], T_train[:,J_train], T_test[:,J_test], args)       # set of selected features
+                # S_hat, train_NME, test_NME, train_mse, test_mse  = NMP_train(_logger, X_train, X_test, T_train, T_test, args)       # set of selected features
+                # args.flag = "given_order"
+                # args.best_ind = np.flip(S_hat)
+                # args.best_ind = np.random.choice([0,1,2,3,4], 5, replace=False)
+                # S_hat, _, test_NME_given, _, _  = NMP_train(_logger, X_train[:,J_train], X_test[:,:], T_train[:,J_train], T_test[:,:], args)
+                # S_hat, train_NME, test_NME, train_mse, test_mse  = NMP_train(X_train, X_test, T_train, T_test, args)       # set of selected features  
+                # print(S_hat)
+                # print(S_hat_given)
 
+                # NMP_FPSR[0,i] = FPSR(S,S_hat)
+                NMP_FNSR[0,i] = FNSR(args.S,S_hat)
+                # NMP_PNME[0,i] = test_NME[-1]
+                # NMP_FNME[0,i] = train_NME
+                # NMP_PMSE[0,i] = test_mse
+                # NMP_FMSE[0,i] = train_mse
 
-            # print(NMP_FPSR)
-            # print(NMP_FNSR[0,:i])
-            # print(NMP_PNME)
-            # print(NMP_FNME)
-            # print(NMP_PMSE)
-            # print(NMP_FMSE)
+                # NMP_NME_matrix[:,i] = test_NME
+                # NMP_NME_matrix_given[:,i] = test_NME_given
+                # print(NMP_NME_matrix)
+                # print(NMP_NME_matrix_given)
 
-        NMP_avg_FPSR = np.append(NMP_avg_FPSR, np.mean(NMP_FPSR))
-        NMP_avg_FNSR = np.append(NMP_avg_FNSR, np.mean(NMP_FNSR))
-        # NMP_avg_PNME = np.append(NMP_avg_PNME, np.mean(NMP_PNME))
-        # NMP_avg_FNME = np.append(NMP_avg_FNME, np.mean(NMP_FNME))
-        # NMP_avg_PMSE = np.append(NMP_avg_PMSE, np.mean(NMP_PMSE))
-        # NMP_avg_FMSE = np.append(NMP_avg_FMSE, np.mean(NMP_FMSE))
+                # print(NMP_FPSR)
+                # print(NMP_FNSR)
+                # print(NMP_PNME)
+                # print(NMP_FNME)
+                # print(NMP_PMSE)
+                # print(NMP_FMSE)
 
-        # NMP_NME_avg = np.mean(NMP_NME_matrix, axis = 1)
-        NMP_NME_avg_given = np.mean(NMP_NME_matrix_given, axis = 1)
-        # print(NMP_NME_avg)
-        print(NMP_NME_avg_given)
+                if len(args.S) == len(S_hat):
+                    diff_ind = np.setdiff1d(args.S, S_hat, assume_unique=True)
+                    if len(diff_ind) > 0:
+                        miss_count = miss_count + 1
+                        # print(S_hat)
+                        # print("For J = "+str(J)+" -> Miss count = "+str(miss_count)+" / "+str(i+1))
 
+            accuracy = (1 - miss_count/MC_Num) * 100
+            NMP_accuracy = np.append(NMP_accuracy, accuracy)
+            
+
+            # NMP_avg_FPSR = np.append(NMP_avg_FPSR, np.mean(NMP_FPSR))
+            NMP_avg_FNSR = np.append(NMP_avg_FNSR, np.mean(NMP_FNSR))
+            # NMP_avg_PNME = np.append(NMP_avg_PNME, np.mean(NMP_PNME))
+            # NMP_avg_FNME = np.append(NMP_avg_FNME, np.mean(NMP_FNME))
+            # NMP_avg_PMSE = np.append(NMP_avg_PMSE, np.mean(NMP_PMSE))
+            # NMP_avg_FMSE = np.append(NMP_avg_FMSE, np.mean(NMP_FMSE))
+
+            # NMP_NME_avg = np.mean(NMP_NME_matrix, axis = 1)
+            # NMP_NME_avg_given = np.mean(NMP_NME_matrix_given, axis = 1)
+            # print(NMP_NME_avg)
+            # print(NMP_NME_avg_given)
 
         # print("Average FPSR of NMP: " + str(NMP_avg_FPSR))
         print("Average FNSR of NMP: " + str(NMP_avg_FNSR))
@@ -141,23 +166,25 @@ def main():
         # print("Average PMSE of NMP: " + str(NMP_avg_PMSE))
         # print("Average FMSE of NMP: " + str(NMP_avg_FMSE))
 
-    FontSize = 18
-    result_path = "./results/"
-    csfont = {'fontname':'sans-serif'}
-    plt.subplots()
-    plt.plot(sweep_J, NMP_avg_FPSR, 'r-', label="FPSR", linewidth=3)
-    plt.plot(sweep_J, NMP_avg_FNSR, 'b-', label="FNSR", linewidth=2)
-    plt.legend(loc='best', fontsize=FontSize)
-    plt.grid()
-    # plt.xlabel("Stopping threshold (eta)",fontdict=csfont, fontsize=FontSize)
-    plt.xlabel("Number of samples (J)",fontdict=csfont, fontsize=FontSize)
-    plt.ylabel("False selection rate",fontdict=csfont, fontsize=FontSize)
-    # plt.title(data+", SSFNN", loc='center', fontsize=FontSize)
-    plt.xticks(fontsize=FontSize)
-    plt.yticks(fontsize=FontSize)
-    plt.tight_layout()
-    plt.savefig(result_path +"FPSR_&_FNSR_vs_J"+".png",dpi=600)
-    plt.close()
+        print("Average dACC of NMP: " + str(NMP_accuracy))
+
+    # FontSize = 18
+    # result_path = "./results/"
+    # csfont = {'fontname':'sans-serif'}
+    # plt.subplots()
+    # plt.plot(sweep_J, NMP_avg_FPSR, 'r-', label="FPSR", linewidth=3)
+    # plt.plot(sweep_J, NMP_avg_FNSR, 'b-', label="FNSR", linewidth=2)
+    # plt.legend(loc='best', fontsize=FontSize)
+    # plt.grid()
+    # # plt.xlabel("Stopping threshold (eta)",fontdict=csfont, fontsize=FontSize)
+    # plt.xlabel("Number of samples (J)",fontdict=csfont, fontsize=FontSize)
+    # plt.ylabel("False selection rate",fontdict=csfont, fontsize=FontSize)
+    # # plt.title(data+", SSFNN", loc='center', fontsize=FontSize)
+    # plt.xticks(fontsize=FontSize)
+    # plt.yticks(fontsize=FontSize)
+    # plt.tight_layout()
+    # plt.savefig(result_path +"FPSR_&_FNSR_vs_J"+".png",dpi=600)
+    # plt.close()
 
     
     # test_NME_ture = [ -4.42711219,  -7.09753944,  -9.24551936, -10.89538164, -12.12525705]

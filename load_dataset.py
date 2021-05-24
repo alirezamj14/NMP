@@ -189,7 +189,7 @@ def prepare_Airfoil():
     X_train = (X_train - X_train.mean(axis=0)) / np.std(X_train, axis=0)
     X_test = (X_test - X_test.mean(axis=0)) / np.std(X_test, axis=0)
 
-    fExtra=500
+    fExtra=10
     X_train = np.concatenate((X_train, np.random.randn(X_train.shape[0],fExtra)), axis=1)
     X_test = np.concatenate((X_test, np.random.randn(X_test.shape[0],fExtra)), axis=1)
     
