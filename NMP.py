@@ -183,8 +183,8 @@ def Err_vs_feat_window(X_train, X_test, T_train, T_test, args):
                 X_tr, X_ts = return_patched_data(X_train, X_test, row, np.append(sorted_ind_col,col), radius=radius, rows=28, cols=28)
             else:
                 X_tr, X_ts = return_patched_data(X_train, X_test, row, col, radius=radius, rows=28, cols=28)
-            # train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
-            train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = my_CNN( X_tr, X_ts, T_train, T_test)
+            train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+            # train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = my_CNN( X_tr, X_ts, T_train, T_test)
             train_nme_array = np.append(train_nme_array, train_nme)
             test_nme_array = np.append(test_nme_array, test_nme)
             train_mse_array = np.append(train_mse_array, train_mse)
@@ -324,14 +324,7 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
 
     while len(search_ind) > 0:
 
-        if len(test_nme_sorted) > 1:
-            # break
-            if len(sorted_ind) == 5:
-                break
-            # if np.abs(test_nme_array[i] - test_nme_sorted[-1])/np.abs(test_nme_sorted[-1]) < eta or np.abs(test_nme_array[i]) <= np.abs(test_nme_sorted[-1]):
-            # if np.abs(test_nme_array[i] - test_nme_sorted[-1])/np.abs(test_nme_sorted[-1]) > eta and np.abs(test_nme_array[i]) <= np.abs(test_nme_sorted[-1]):
-            #     break
-                # pass
+        
 
         train_nme_array = np.array([])
         test_nme_array = np.array([])
@@ -364,6 +357,14 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
             # i = np.where(search_ind == best_ind_reversed[k])
             # i = np.where(search_ind == best_ind_random[k])
             
+        if len(test_nme_sorted) > 1:
+            # break
+            if len(sorted_ind) == len(args.S):
+                break
+            if np.abs(test_nme_array[i] - test_nme_sorted[-1])/np.abs(test_nme_sorted[-1]) < eta or np.abs(test_nme_array[i]) <= np.abs(test_nme_sorted[-1]):
+            # if np.abs(test_nme_array[i] - test_nme_sorted[-1])/np.abs(test_nme_sorted[-1]) > eta and np.abs(test_nme_array[i]) <= np.abs(test_nme_sorted[-1]):
+                # break
+                pass
 
         best_ind = search_ind[i]
         train_nme_sorted = np.append(train_nme_sorted, train_nme_array[i])
@@ -405,21 +406,21 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
     plt.savefig(result_path +"Err_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+"_SSFN.png",dpi=600)
     plt.close()
 
-    if data=="MNIST":
-        csfont = {'fontname':'sans-serif'}
-        plt.subplots()
-        plt.plot(np.arange(1,P+1), test_acc_sorted, 'r-', label="Test Accuracy", linewidth=2)
-        plt.plot(np.arange(1,P+1), train_acc_sorted, 'b-', label="Train Accuracy", linewidth=2)
-        plt.legend(loc='best')
-        plt.grid()
-        plt.xlabel("Number of input features",fontdict=csfont, fontsize=FontSize)
-        plt.ylabel("Classification accuracy",fontdict=csfont, fontsize=FontSize)
-        # plt.title(data+", SSFN", loc='center')
-        plt.xticks(fontsize=FontSize)
-        plt.yticks(fontsize=FontSize)
-        plt.tight_layout()
-        plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
-        plt.close()
+    # if data=="MNIST":
+    #     csfont = {'fontname':'sans-serif'}
+    #     plt.subplots()
+    #     plt.plot(np.arange(1,P+1), test_acc_sorted, 'r-', label="Test Accuracy", linewidth=2)
+    #     plt.plot(np.arange(1,P+1), train_acc_sorted, 'b-', label="Train Accuracy", linewidth=2)
+    #     plt.legend(loc='best')
+    #     plt.grid()
+    #     plt.xlabel("Number of input features",fontdict=csfont, fontsize=FontSize)
+    #     plt.ylabel("Classification accuracy",fontdict=csfont, fontsize=FontSize)
+    #     # plt.title(data+", SSFN", loc='center')
+    #     plt.xticks(fontsize=FontSize)
+    #     plt.yticks(fontsize=FontSize)
+    #     plt.tight_layout()
+    #     plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
+    #     plt.close()
 
     return sorted_ind, train_nme_sorted[-1], test_nme_sorted, train_mse_sorted[-1], test_mse_sorted[-1]
 
