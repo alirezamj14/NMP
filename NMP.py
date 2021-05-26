@@ -337,6 +337,9 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
             else:
                 X_tr = X_train[[i],:]
                 X_ts = X_test[[i],:]
+
+            if i == 36:
+                pass
             train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
             # train_nme, test_nme, train_mse, test_mse = MLP( X_tr, X_ts, T_train, T_test, data)
             train_nme_array = np.append(train_nme_array, train_nme)
@@ -357,8 +360,8 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
             # i = np.where(search_ind == best_ind_reversed[k])
             # i = np.where(search_ind == best_ind_random[k])
             
-        if len(test_nme_sorted) > 1:
-            # break
+        if len(test_nme_sorted) >= 0.4 * 784:
+            break
             if len(sorted_ind) == len(args.S):
                 break
             if np.abs(test_nme_array[i] - test_nme_sorted[-1])/np.abs(test_nme_sorted[-1]) < eta or np.abs(test_nme_array[i]) <= np.abs(test_nme_sorted[-1]):
@@ -374,7 +377,9 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
         sorted_ind = np.append(sorted_ind, best_ind)
         search_ind = np.delete(search_ind, i)
     
-        # print(sorted_ind)
+        print(sorted_ind)
+        print(train_nme_sorted)
+        print(train_mse_sorted)
         # print(str(round(len(sorted_ind)/P * 100,2))+"%")
 
     # MyFPSR = FPSR([0, 1, 2],sorted_ind[0:3]) 
@@ -650,11 +655,29 @@ def plot_MNIST(_logger,args):
     LayerNum = SSFN_hparameters["LayerNum"]
     NodeNum = SSFN_hparameters["NodeNum"]
     
-    save_name = "sorted"
-    my_dic = load_dic( parameters_path, data, save_name)
+    save_name = "sorted_NGP_window1"
+    # my_dic = load_dic( parameters_path, data, save_name)
+    print("Read sorted indices")
+    sorted_ind = [195,404,408,272,239,322,296,489,400,341,290,299,464,485,398,570,379,377
+    ,596,745,250,214,471,368,447,620,325,109,754,673,92,636,357,383,348,514
+    ,566,211,657,511,655,634,352,445,672,306,392,263,430,237,267,327,597,433
+    ,321,80,359,270,455,143,228,292,563,5,179,558,554,304,307,492,468,126
+    ,285,380,189,146,374,291,762,598,372,205,287,556,349,293,625,168,569,302
+    ,621,34,662,422,680,209,212,312,255,629,68,235,274,677,691,152,772,586
+    ,190,20,429,282,460,550,632,46,722,648,202,319,276,764,17,43,353,727
+    ,604,443,575,529,457,18,53,333,651,561,264,580,99,759,421,405,258,82
+    ,252,4,50,705,473,573,495,305,572,665,364,527,60,481,58,725,337,746
+    ,131,663,335,480,148,150,462,224,403,286,56,416,265,339,318,323,326,453
+    ,342,47,147,366,688,51,459,579,373,531,681,233,667,627,72,28,289,712
+    ,155,350,222,22,504,129,395,243,470,35,334,709,175,137,645,779,675,706
+    ,654,1,9,332,161,107,502,269,10,417,338,254,381,442,613,595,605,630
+    ,85,647,8,431,160,91,753,266,206,316,780,734,75,410,241,248,36,125
+    ,313,521,232,256,637,407,388,513,773,415,423,113,133,721,145,747,389,498
+    ,257,559,710,628,571,661,121,406,452,361,199,699,94,63,678,242,114,783
+    ,87,666,494,543,262,724,277,67,491,775,112,78,546,345,397,41,221,726
+    ,356,157,541,171,537,340,766,524]
 
-
-    # show_image(X_train[:,1],X_train[:,20],X_train[:,30],my_dic["sorted_ind"], save_name)
+    show_image((X_train[:,1],X_train[:,20],X_train[:,30]),sorted_ind, save_name)
     # save_name = "random"
     # random_ind = np.arange(0,784)
     # np.random.shuffle(random_ind)
@@ -747,10 +770,10 @@ def NMP_train(_logger, X_train, X_test, T_train, T_test, args):
     # args = define_parser()
 
     # sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat_window(X_train, X_test, T_train, T_test, args)
-    sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat(X_train, X_test, T_train, T_test, args)
+    # sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat(X_train, X_test, T_train, T_test, args)
     # acc_vs_J(_logger,args)
     # acc_vs_P(_logger,args)
-    # plot_MNIST(_logger,args)
+    plot_MNIST(_logger,args)
     # my_plot(_logger,args)
 
     return sorted_ind, train_NME, test_NME, train_mse, test_mse 
