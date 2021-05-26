@@ -427,8 +427,10 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         # model = XBART(num_trees = int(args.tree_size), num_sweeps = 20, burnin = 15, verbose = True, parallel = True)
         model = XBART(num_trees = int(args.tree_size), num_sweeps = 20, burnin = 15, verbose = True, parallel = True)
         model = create_model(args, file_path, model, X_train, T_train)
-        
+
         S_hat = sorted(model.importance, key=model.importance.get)[::-1]
+        imp_vals = np.array(S_hat)
+        S_hat = imp_vals[imp_vals>0.01]
         
         if args.data=="MNIST" or args.data=="CIFAR-10": # Take 40% features of MNIST only
             file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".joblib"
@@ -475,6 +477,8 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
 
     elif args.algo=="GAM": # Note GAM doesn't work on MNIST properly
         file_path = file_path_prefix + args.data + "/" + args.algo + "-" + str(i) + ".joblib"
+        thershold = 0.01
+        
         
         gam_fn_form = s(0, n_splines=5)
         for feature in range(1, X_train.shape[1]):
@@ -484,21 +488,26 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         model = GAM(gam_fn_form, distribution='normal', link='identity', max_iter=10, tol=0.001)
         model = create_model(args, file_path, model, X_train, T_train)
         
-        S_hat = np.argsort(model.statistics_['p_values'])
+        feature_vals = np.array(model.statistics_['p_values'])
+        imp_vals = feature_vals[feature_vals > thershold]
+        S_hat = np.argsort(imp_vals).flatten()
+        
+        #S_hat = np.argsort(model.statistics_['p_values'])
         
         log_params = True
 
     elif args.algo=="LASSO":
         file_path = file_path_prefix + args.data + "/" + args.algo + "-" + str(i) + ".joblib"
         
+        thershold = 0.01
         #T_train = np.argmax(T_train, axis=1)
         #T_test = np.argmax(T_test, axis=1)
 
         model = linear_model.Lasso(alpha=0.01, max_iter=5000)
         model = create_model(args, file_path, model, X_train, T_train)
 
-        S_hat = np.argsort(model.coef_)
-        
+        imp_vals = model.coef_[model.coef_ > thershold]
+        S_hat = np.argsort(imp_vals).flatten()
         if args.data=="MNIST" or args.data=="CIFAR-10": # Take 40% features of MNIST only
             file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".joblib"
             n_sub_feat_size = int(X_train.shape[1]*0.4)
@@ -528,10 +537,11 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         log_params = False
 
     elif args.algo=="CORR":
-        S_hat = np.argsort(abs(np.dot((X_train.T),T_train).T))[::-1].flatten()
-        model_fpsr[0,i] = FPSR(S,S_hat[0:len(S)])
-        model_fnsr[0,i] = FNSR(S,S_hat[0:len(S)])
-
+        thershold = 0.01
+        importance_vals = abs(np.dot((X_train.T),T_train).T)[::-1]
+        S_hat = np.argsort(importance_vals  > thershold ).flatten()
+        model_fpsr[0,i] = FPSR(S,S_hat)
+        model_fnsr[0,i] = FNSR(S,S_hat)
 
         log_params = False
     elif args.algo=="SPINN":
@@ -547,8 +557,8 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         model_msfe[0,i] = compute_mse_compare(T_train, model.predict(X_train).reshape(T_train.shape))
         model_mspe[0,i] = compute_mse_compare(T_test, model.predict(X_test).reshape(T_test.shape))
         # Selection rate errors
-        model_fpsr[0,i] = FPSR(S,S_hat[0:len(S)])
-        model_fnsr[0,i] = FNSR(S,S_hat[0:len(S)])
+        model_fpsr[0,i] = FPSR(S,S_hat)
+        model_fnsr[0,i] = FNSR(S,S_hat)
         # Cardinality of the model
         model_card[0,i] = len(S_hat)
         # Normalized Error (NME)
