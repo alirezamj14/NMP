@@ -59,6 +59,27 @@ def compute_mse_compare(S, T):
     mse = norm((S - T), 'fro') / T.shape[0]
     return mse
 
+def compute_nme(S, T):
+    """
+    compute NME value 
+
+    Parameters
+    ----------
+    S : np.ndarray
+    predicted matrix
+    T : np.ndarray
+    given matrix
+
+    Returns
+    ----------
+    nme : int
+    NME value
+    """
+    numerator = norm((S - T), 'fro')
+    denominator = norm(T, 'fro')
+    nme = 20 * np.log10(numerator / denominator)
+    return nme
+
 def compute_mse(S, T):
     """
     compute Mean Squared Error: Training error  | Testing error
@@ -211,27 +232,6 @@ def create_v_values(Q):
     I = np.identity(Q, dtype=np.float32)
     concatenate_I = np.concatenate((I, -I), axis=0)
     return concatenate_I
-
-def compute_nme(S, T):
-    """
-    compute NME value 
-
-    Parameters
-    ----------
-    S : np.ndarray
-    predicted matrix
-    T : np.ndarray
-    given matrix
-
-    Returns
-    ----------
-    nme : int
-    NME value
-    """
-    numerator = norm((S - T), 'fro')
-    denominator = norm(T, 'fro')
-    nme = 20 * np.log10(numerator / denominator)
-    return nme
 
 def calculate_accuracy(S, T):
     # S: predicted

@@ -74,8 +74,8 @@ def define_parser():
     parser = argparse.ArgumentParser(description="Run NMP")
     parser.add_argument("--reduced_inference", default="True", help="If comparision subset is reduced according to paper")
     parser.add_argument("--J", default="1000", help="Comparision subset")
-    parser.add_argument("--data", default="BOSTON", help="Input dataset available as the paper shows")
-    parser.add_argument("--algo", default="CORR", help="The algorithm used for feature selection")
+    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
+    parser.add_argument("--algo", default="RF", help="The algorithm used for feature selection")
     parser.add_argument("--tree_size", default="20", help="The number of trees used in BART or RF")
     parser.add_argument("--MC_Num", default="10", help="The number of MC simulations done")
     parser.add_argument("--deeplift_sample_size", default="10", help="The number of samples chosen from deeplift for explaining in each MC simulation")
@@ -321,11 +321,13 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         importance_vals = model.feature_importances_
         
         # Choose features which has 1% importance according to paper: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6660200/ 
-        S_hat = np.argwhere(importance_vals > 0.00).flatten()
+        S_hat = np.argwhere(importance_vals > 0.01).flatten()
         
         if args.data=="MNIST" or args.data=="CIFAR-10": # Take 40% features of MNIST only
             file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".joblib"
             n_sub_feat_size = int(X_train.shape[1]*0.4)
+            # For RF use this because of the already trained saved model in Sandipan's laptop
+            # n_sub_feat_size = 315 
             S_hat = np.argsort(importance_vals)[::-1][:n_sub_feat_size].flatten() #40% features
             model = RandomForestRegressor(n_estimators=100) 
             model = create_model(args, file_path, model, X_train[:,S_hat], T_train)
@@ -511,7 +513,7 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         if args.data=="MNIST" or args.data=="CIFAR-10": # Take 40% features of MNIST only
             file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".joblib"
             n_sub_feat_size = int(X_train.shape[1]*0.4)
-            S_hat = np.argsort(model.coef_)[::-1][:n_sub_feat_size].flatten() #40% features
+            S_hat = np.argsort(model.coef_)[::-1][:n_sub_feat_size].flatten() #40% features           
             model = linear_model.Lasso(alpha=0.01, max_iter=5000)
             model = create_model(args, file_path, model, X_train[:,S_hat], T_train)
             X_train = X_train[:,S_hat]
@@ -554,8 +556,8 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
 
     if log_params:
         # Mean squared errors
-        model_msfe[0,i] = compute_mse_compare(T_train, model.predict(X_train).reshape(T_train.shape))
-        model_mspe[0,i] = compute_mse_compare(T_test, model.predict(X_test).reshape(T_test.shape))
+        model_msfe[0,i] = compute_mse_compare(model.predict(X_train).reshape(T_train.shape), T_train)
+        model_mspe[0,i] = compute_mse_compare(model.predict(X_test).reshape(T_test.shape), T_test)
         # Selection rate errors
         model_fpsr[0,i] = FPSR(S,S_hat)
         model_fnsr[0,i] = FNSR(S,S_hat)
