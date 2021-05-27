@@ -60,7 +60,7 @@ class CNNModel:
         
         model = self.create_cnn_model()
         model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
-        model.fit(X_train, T_train, epochs=3, batch_size=128)
+        model.fit(X_train, T_train, epochs=10, batch_size=128)
         # Sanity checks
         score_train = model.evaluate(X_train, T_train, verbose=0)
         score_test = model.evaluate(X_test, T_test, verbose=0)
@@ -75,7 +75,7 @@ def define_parser():
     parser.add_argument("--reduced_inference", default="True", help="If comparision subset is reduced according to paper")
     parser.add_argument("--J", default="1000", help="Comparision subset")
     parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
-    parser.add_argument("--algo", default="RF", help="The algorithm used for feature selection")
+    parser.add_argument("--algo", default="BART", help="The algorithm used for feature selection")
     parser.add_argument("--tree_size", default="20", help="The number of trees used in BART or RF")
     parser.add_argument("--MC_Num", default="10", help="The number of MC simulations done")
     parser.add_argument("--deeplift_sample_size", default="10", help="The number of samples chosen from deeplift for explaining in each MC simulation")
@@ -300,7 +300,7 @@ def create_model(args, file_path, model, X_train, T_train):
         print ("--- Creating the model ---", args.algo)
         
         if args.algo == "DEEPLIFT":
-            model.fit(X_train, T_train, epochs=3, batch_size=128)
+            model.fit(X_train, T_train, epochs=10, batch_size=128)
             model.save(file_path)
         else:
             model.fit(X_train, T_train)
@@ -325,9 +325,9 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         
         if args.data=="MNIST" or args.data=="CIFAR-10": # Take 40% features of MNIST only
             file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".joblib"
-            n_sub_feat_size = int(X_train.shape[1]*0.4)
+            # n_sub_feat_size = int(X_train.shape[1]*0.4)
             # For RF use this because of the already trained saved model in Sandipan's laptop
-            # n_sub_feat_size = 315 
+            n_sub_feat_size = 315 
             S_hat = np.argsort(importance_vals)[::-1][:n_sub_feat_size].flatten() #40% features
             model = RandomForestRegressor(n_estimators=100) 
             model = create_model(args, file_path, model, X_train[:,S_hat], T_train)
@@ -389,6 +389,7 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         total_val = np.sum(np.sum(np.abs(shap_values), axis=0), axis=0).flatten()
         S_hat = total_val.argsort()[::-1]
 
+        
         if args.data=="MNIST" or args.data=="CIFAR-10": # Take 40% features of MNIST only
             X_train = x_train[:,S_hat]
             X_test = x_test[:,S_hat]
@@ -403,7 +404,7 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
             model_new = CNNModel(num_classes, input_shape).create_cnn_model()
             model_new.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
             model = create_model(args, file_path, model_new, X_train, T_train)
-
+        
         # Just to compare what global features SHAP with DeepLift choose
         # X_train_ori =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)
         # show_image([X_train_ori[:,1],X_train_ori[:,20],X_train_ori[:,30]],S_hat[0:len(S)], (args.algo+str(i)))
@@ -433,6 +434,7 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         S_hat = sorted(model.importance, key=model.importance.get)[::-1]
         imp_vals = np.array(S_hat)
         S_hat = imp_vals[imp_vals>0.01]
+        
         
         if args.data=="MNIST" or args.data=="CIFAR-10": # Take 40% features of MNIST only
             file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".joblib"
@@ -566,7 +568,16 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         # Normalized Error (NME)
         model_nme_train[0,i] = compute_nme(model.predict(X_train).reshape(T_train.shape), T_train)
         model_nme_test[0,i] = compute_nme(model.predict(X_test).reshape(T_test.shape), T_test)
-            
+        
+        if args.algo == "BART":
+            val = model.predict(X_test)
+            normalized = (val-min(val))/(max(val)-min(val))
+            accuracy = np.sum([abs(0.9*normalized - T_test.flatten()) < 0.2]) / len(T_test.flatten())
+            print(accuracy)
+        else:
+            print(calculate_accuracy(model.predict(X_test).reshape(T_test.shape).T, T_test.T))
+        
+
     print ("Time taken for this MC iteration: ", time.time() - start_time)
 
              
