@@ -74,6 +74,7 @@ def define_parser():
     parser = argparse.ArgumentParser(description="Run NMP")
     parser.add_argument("--reduced_inference", default="True", help="If comparision subset is reduced according to paper")
     parser.add_argument("--J", default="1000", help="Comparision subset")
+    parser.add_argument("--feature_percentage", default="100", help="Percentage of features used for performance measure")
     parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
     parser.add_argument("--algo", default="BART", help="The algorithm used for feature selection")
     parser.add_argument("--tree_size", default="20", help="The number of trees used in BART or RF")
@@ -311,6 +312,7 @@ def create_model(args, file_path, model, X_train, T_train):
 def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, model_fpsr, model_fnsr, model_msfe, model_mspe, model_card, model_nme_train, model_nme_test):
     log_params = False
     file_path_prefix = "./parameters/"
+    feature_percentage = args.feature_percentage
 
     start_time = time.time()
     if args.algo=="RF":      
@@ -324,10 +326,10 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         S_hat = np.argwhere(importance_vals > 0.01).flatten()
         
         if args.data=="MNIST" or args.data=="CIFAR-10": # Take 40% features of MNIST only
-            file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".joblib"
-            # n_sub_feat_size = int(X_train.shape[1]*0.4)
+            file_path = file_path_prefix + args.data + "/" + args.algo + "-" + feature_percentage + "_percent_features-" + str(i) + ".joblib"
+            n_sub_feat_size = int(X_train.shape[1]*int(feature_percentage)/100)
             # For RF use this because of the already trained saved model in Sandipan's laptop
-            n_sub_feat_size = 315 
+            # n_sub_feat_size = 315 
             S_hat = np.argsort(importance_vals)[::-1][:n_sub_feat_size].flatten() #40% features
             model = RandomForestRegressor(n_estimators=100) 
             model = create_model(args, file_path, model, X_train[:,S_hat], T_train)
@@ -398,8 +400,8 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
             # Make sure images have shape (28, 28, 1)
             X_train = np.expand_dims(X_train, -1)
             X_test = np.expand_dims(X_test, -1)
-            file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".h5"
-            n_sub_feat_size = int(X_train.shape[1]*0.4)
+            file_path = file_path_prefix + args.data + "/" + args.algo + "-" + feature_percentage + "percent_features-" + str(i) + ".h5"
+            n_sub_feat_size = int(X_train.shape[1]*int(feature_percentage)/100)
             S_hat = total_val.argsort()[::-1][:n_sub_feat_size] #40% features
             model_new = CNNModel(num_classes, input_shape).create_cnn_model()
             model_new.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
@@ -437,8 +439,8 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         
         
         if args.data=="MNIST" or args.data=="CIFAR-10": # Take 40% features of MNIST only
-            file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".joblib"
-            n_sub_feat_size = int(X_train.shape[1]*0.4)
+            file_path = file_path_prefix + args.data + "/" + args.algo + "-" + feature_percentage + "_percent_features-" + str(i) + ".joblib"
+            n_sub_feat_size = int(X_train.shape[1]*int(feature_percentage)/100)
             S_hat = sorted(model.importance, key=model.importance.get)[::-1][:n_sub_feat_size] #40% features
             model = XBART(num_trees = int(args.tree_size), num_sweeps = 20, burnin = 15, verbose = True, parallel = True)
             X_train = pd.DataFrame(x_train[:,S_hat])
@@ -513,8 +515,8 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         imp_vals = model.coef_[model.coef_ > thershold]
         S_hat = np.argsort(imp_vals).flatten()
         if args.data=="MNIST" or args.data=="CIFAR-10": # Take 40% features of MNIST only
-            file_path = file_path_prefix + args.data + "/" + args.algo + "-" + "40_percent_features-" + str(i) + ".joblib"
-            n_sub_feat_size = int(X_train.shape[1]*0.4)
+            file_path = file_path_prefix + args.data + "/" + args.algo + "-" + feature_percentage + "_percent_features-" + str(i) + ".joblib"
+            n_sub_feat_size = int(X_train.shape[1]*int(feature_percentage)/100)
             S_hat = np.argsort(model.coef_)[::-1][:n_sub_feat_size].flatten() #40% features           
             model = linear_model.Lasso(alpha=0.01, max_iter=5000)
             model = create_model(args, file_path, model, X_train[:,S_hat], T_train)
@@ -568,15 +570,22 @@ def run_feature_selector_algo(args, S, X_train, X_test, T_train, T_test, i, mode
         # Normalized Error (NME)
         model_nme_train[0,i] = compute_nme(model.predict(X_train).reshape(T_train.shape), T_train)
         model_nme_test[0,i] = compute_nme(model.predict(X_test).reshape(T_test.shape), T_test)
-        
+                
+        if args.algo == "BART":
+            val = model.predict(X_train)
+            normalized = (val-min(val))/(max(val)-min(val))
+            accuracy = np.sum([abs(0.9*normalized - T_train.flatten()) < 0.2]) / len(T_train.flatten())
+            print("**********The train accuracy is: ", accuracy)
+        else:
+            print("**********The train accuracy is: ", calculate_accuracy(model.predict(X_train).reshape(T_train.shape).T, T_train.T))
+
         if args.algo == "BART":
             val = model.predict(X_test)
             normalized = (val-min(val))/(max(val)-min(val))
             accuracy = np.sum([abs(0.9*normalized - T_test.flatten()) < 0.2]) / len(T_test.flatten())
-            print(accuracy)
+            print("**********The test accuracy is: ", accuracy)
         else:
-            print(calculate_accuracy(model.predict(X_test).reshape(T_test.shape).T, T_test.T))
-        
+            print("**********The test accuracy is: ", calculate_accuracy(model.predict(X_test).reshape(T_test.shape).T, T_test.T))
 
     print ("Time taken for this MC iteration: ", time.time() - start_time)
 

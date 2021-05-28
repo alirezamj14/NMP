@@ -180,6 +180,65 @@ def show_image(samples, sorted_ind, save_name):
     plt.close()
 
 
+def show_image_accuracy(samples, sorted_ind, save_name, test_accuracy):
+    result_path = "./results/"
+    image = {}
+    percentage = [0.2,0.4,0.6,0.8,1] # [0.2,0.4,0.6,0.8,1] # [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+    percentage_label = [0.08,0.16,0.24,0.32,.40]
+    fig = plt.figure()
+    
+    gs1 = gridspec.GridSpec(len(percentage), len(samples))
+    gs1.update(wspace=0.025, hspace=0.025) # set the spacing between axes.
+    no_of_samples = len(samples)
+
+    i = 0
+    feature_len = len(sorted_ind)
+    for p in percentage:
+        idx = 0
+        for x in samples:
+            y = np.zeros(x.shape)
+            temp = int(round(p*feature_len))
+            index = sorted_ind[0:temp]
+            
+            y[index] = 1 # Identify the feature positions
+            feature = np.reshape(y, (28,28))
+            feature = np.transpose(feature)
+            #feature[feature>0] = 1
+
+            sample = np.reshape(x, (28,28))
+            sample = np.transpose(sample)
+            #sample[sample>0] = 1
+            zero = np.zeros(sample.shape)
+
+            dummy_RGB_image = np.repeat(sample[..., np.newaxis], 3, -1)
+            feature_image = np.repeat(zero[..., np.newaxis], 3, -1)
+            feature_image[:,:,0] = feature
+            #dummy_RGB_image[:,:,1] = sample
+            #dummy_RGB_image[:,:,2] = sample
+            
+            image = Image.fromarray((dummy_RGB_image * 255).astype(np.uint8))
+            f_image = Image.fromarray((feature_image * 255).astype(np.uint8))
+            ax = plt.subplot(gs1[i])
+
+            ax.set_aspect('equal')
+            # ax = fig.add_subplot(3, len(percentage), i)
+            params = {'interpolation': 'nearest'}
+            imgplot = plt.imshow(image)
+            plt.imshow(f_image, 'viridis', interpolation='nearest', alpha=0.5)
+            
+            if idx == 0:
+                ax.set_title(str(int(percentage_label[i%(no_of_samples-1)] * 100))+"%", x=-0.5,y=0.3, fontsize=20)
+            if idx == no_of_samples-1:
+                ax.set_title(str(test_accuracy[i%(no_of_samples-1)])+"%", color='blue', x=1.5,y=0.3, fontsize=20)
+                #ax.set_title(, x=10,y=0.3)
+            
+            plt.axis('off')
+            i = i + 1
+            idx = idx + 1
+    plt.show()
+    #plt.savefig(result_path +"Sample_image_MNIST_"+save_name+".png")
+    #plt.close()
+
 def save_list(my_list, parameters_path, data):
     with open(parameters_path + data+"_"+'n_lists.json','w') as f: 
         json.dump(my_list, f, ensure_ascii=False)
