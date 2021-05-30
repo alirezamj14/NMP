@@ -107,9 +107,9 @@ print(points[1:1000, 2][1:10])
 
 fig = plt.figure(figsize=(5, 5))
 ax = fig.add_subplot(111, projection="3d")
-ax.grid(True)
+#ax.grid(True)
 # Example of first n points chosen
 ax.scatter(points[1:1000, 0], points[1:1000, 1], points[1:1000, 2])
-ax.set_axis_off()
+#ax.set_axis_off()
 plt.show()
 
