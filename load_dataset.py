@@ -214,7 +214,7 @@ def prepare_Modelnet10():
     points = X_train[3120]
     fig = plt.figure(figsize=(5, 5))
     ax = fig.add_subplot(111, projection="3d")
-    # Example of first n points chosen (Max is 20148 according to the data dimension)
+    # Example of first n points chosen (Max is 2048 according to the data dimension)
     ax.scatter(points[1:2000, 0], points[1:2000, 1], points[1:2000, 2])
     ax.set_axis_off()
     plt.show()
