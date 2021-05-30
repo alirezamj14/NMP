@@ -194,3 +194,29 @@ def prepare_Airfoil():
     X_test = np.concatenate((X_test, np.random.randn(X_test.shape[0],fExtra)), axis=1)
     
     return X_train.T, X_test.T, T_train.T,  T_test.T
+
+def prepare_Modelnet10():
+    import gzip
+
+    with gzip.open('./mat_files/modelnet-10.npy.gz','rb') as data_zip:
+        data = np.load(data_zip, allow_pickle=True)
+        X_train = data.item()['train_x']
+        T_train = data.item()['train_y']
+        X_test = data.item()['test_x']
+        T_test = data.item()['test_y']
+
+    print("Train data shape: ", X_train.shape)
+    print("Test data shape: ", X_test.shape)
+    print("Train data label: ", T_train.shape)
+    print("Train data label: ", T_test.shape)
+ 
+    # Take an example to visualize for understanding
+    points = X_train[3120]
+    fig = plt.figure(figsize=(5, 5))
+    ax = fig.add_subplot(111, projection="3d")
+    # Example of first n points chosen (Max is 20148 according to the data dimension)
+    ax.scatter(points[1:2000, 0], points[1:2000, 1], points[1:2000, 2])
+    ax.set_axis_off()
+    plt.show()
+    
+    return X_train, X_test, T_train,  T_test
