@@ -75,7 +75,7 @@ def define_parser():
     parser.add_argument("--reduced_inference", default="True", help="If comparision subset is reduced according to paper")
     parser.add_argument("--J", default="1000", help="Comparision subset")
     parser.add_argument("--feature_percentage", default="100", help="Percentage of features used for performance measure")
-    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="MODELNET-10", help="Input dataset available as the paper shows")
     parser.add_argument("--algo", default="BART", help="The algorithm used for feature selection")
     parser.add_argument("--tree_size", default="20", help="The number of trees used in BART or RF")
     parser.add_argument("--MC_Num", default="10", help="The number of MC simulations done")
@@ -93,6 +93,7 @@ def prepare_data(args):
         T_train ([float]): [The matrix of training target. Each row contains one sample.]
         T_test ([float]): [The matrix of testing target. Each row contains one sample.]
     """
+
 
     if args.data=="MNIST":
         X_train =  loadmat("./mat_files/MNIST.mat")["train_x"].astype(np.float32)

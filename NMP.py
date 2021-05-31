@@ -46,6 +46,8 @@ def define_dataset(args):
         X_train, X_test, T_train,  T_test  = prepare_NN()
     elif args.data == "Artificial":
         X_train, X_test, T_train,  T_test  = prepare_artificial()
+    elif args.data == "Modelnet10":
+        X_train, X_test, T_train,  T_test  = prepare_Modelnet10()
     return X_train, X_test, T_train, T_test
 
 def set_hparameters(args):
