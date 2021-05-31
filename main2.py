@@ -13,7 +13,7 @@ from joblib import Parallel, delayed
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run progressive learning")
-    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="CIFAR10", help="Input dataset available as the paper shows")
     parser.add_argument("--lam", type=float, default=10**(2), help="Reguralized parameters on the least-square problem")
     parser.add_argument("--mu", type=float, default=10**(3), help="Parameter for ADMM")
     parser.add_argument("--kMax", type=int, default=100, help="Iteration number of ADMM")
@@ -50,6 +50,8 @@ def define_dataset(args):
         X_train, X_test, T_train,  T_test  = prepare_Boston()
     elif args.data == "Airfoil":
         X_train, X_test, T_train,  T_test  = prepare_Airfoil()
+    elif args.data == "CIFAR10":
+        X_train, X_test, T_train,  T_test  = prepare_cifar10()
     return X_train, X_test, T_train, T_test
 
 def parallel_Acc_vs_J(_logger, J, args):
@@ -167,25 +169,25 @@ def main():
             for i in np.arange(0,MC_Num):
                 X_train, X_test, T_train, T_test = define_dataset(args)
 
-                # X_train_mean = np.mean(X_train, axis=1 )
-                # X_test_mean = np.mean(X_test, axis=1 )
-                # X_train_mean = np.sort(X_train_mean)
-                # X_test_mean = np.sort(X_test_mean)
-                # FontSize = 18
-                # result_path = "./results/"
-                # csfont = {'fontname':'sans-serif'}
-                # plt.subplots()
-                # plt.plot(X_train_mean, 'r-', label="Train", linewidth=3)
-                # plt.plot(X_test_mean, 'b-', label="Test", linewidth=2)
-                # plt.legend(loc='best', fontsize=FontSize)
-                # plt.grid()
-                # plt.xlabel("Feature index",fontdict=csfont, fontsize=FontSize)
-                # plt.ylabel("Sum",fontdict=csfont, fontsize=FontSize)
-                # plt.xticks(fontsize=FontSize)
-                # plt.yticks(fontsize=FontSize)
-                # plt.tight_layout()
-                # plt.savefig(result_path +"MNIST_sum"+".png",dpi=600)
-                # plt.close()
+                X_train_mean = np.mean(X_train, axis=1 )
+                X_test_mean = np.mean(X_test, axis=1 )
+                X_train_mean = np.sort(X_train_mean)
+                X_test_mean = np.sort(X_test_mean)
+                FontSize = 18
+                result_path = "./results/"
+                csfont = {'fontname':'sans-serif'}
+                plt.subplots()
+                plt.plot(X_train_mean[:1024], 'r-', label="Train", linewidth=3)
+                plt.plot(X_test_mean[:1024], 'b-', label="Test", linewidth=2)
+                plt.legend(loc='best', fontsize=FontSize)
+                plt.grid()
+                plt.xlabel("Feature index",fontdict=csfont, fontsize=FontSize)
+                plt.ylabel("Sum",fontdict=csfont, fontsize=FontSize)
+                plt.xticks(fontsize=FontSize)
+                plt.yticks(fontsize=FontSize)
+                plt.tight_layout()
+                plt.savefig(result_path + data +"_sum"+".png",dpi=600)
+                plt.close()
 
                 J_train = np.random.choice(X_train.shape[1], int(round(J)), replace=False)
                 J_test = np.random.choice(X_test.shape[1], int(round(0.1*J)), replace=False)
