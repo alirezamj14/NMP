@@ -150,7 +150,7 @@ def Err_vs_feat_window(X_train, X_test, T_train, T_test, args):
     LA = "None"
 
     # train_error, test_error = SSFN( X_train, X_test, T_train, T_test, SSFN_hparameters)
-    rows, cols, depth = (28, 28, 1)
+    rows, cols, depth = (32, 32, 1)
     radius = 4
     R_num = rows // radius
     C_num = cols // radius
@@ -178,15 +178,15 @@ def Err_vs_feat_window(X_train, X_test, T_train, T_test, args):
             row = i // C_num
             col = i % C_num
             if len(sorted_ind_row)>=1 and len(sorted_ind_col)>=1 :
-                X_tr, X_ts = return_patched_data(X_train, X_test, np.append(sorted_ind_row,row), np.append(sorted_ind_col,col), radius=radius, rows=28, cols=28)
+                X_tr, X_ts = return_patched_data(X_train, X_test, np.append(sorted_ind_row,row), np.append(sorted_ind_col,col), radius=radius, rows=rows, cols=cols)
             elif len(sorted_ind_row)>=1 and len(sorted_ind_col)==0 :
-                X_tr, X_ts = return_patched_data(X_train, X_test, np.append(sorted_ind_row,row), col, radius=radius, rows=28, cols=28)
+                X_tr, X_ts = return_patched_data(X_train, X_test, np.append(sorted_ind_row,row), col, radius=radius, rows=rows, cols=cols)
             elif len(sorted_ind_row)>=0 and len(sorted_ind_col)==1 :
-                X_tr, X_ts = return_patched_data(X_train, X_test, row, np.append(sorted_ind_col,col), radius=radius, rows=28, cols=28)
+                X_tr, X_ts = return_patched_data(X_train, X_test, row, np.append(sorted_ind_col,col), radius=radius, rows=rows, cols=cols)
             else:
-                X_tr, X_ts = return_patched_data(X_train, X_test, row, col, radius=radius, rows=28, cols=28)
+                X_tr, X_ts = return_patched_data(X_train, X_test, row, col, radius=radius, rows=rows, cols=cols)
             # train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
-            train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = my_CNN( X_tr, X_ts, T_train, T_test)
+            train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = my_CNN( X_train, X_test, T_train, T_test)
             train_nme_array = np.append(train_nme_array, train_nme)
             test_nme_array = np.append(test_nme_array, test_nme)
             train_mse_array = np.append(train_mse_array, train_mse)
@@ -237,7 +237,7 @@ def Err_vs_feat_window(X_train, X_test, T_train, T_test, args):
     output_dic["train_nme_sorted"]=train_nme_sorted 
     output_dic["test_mse_sorted"]=test_mse_sorted 
     output_dic["train_mse_sorted"]=train_mse_sorted 
-    save_dic(output_dic, parameters_path, data, "sorted_CNN_window4")
+    save_dic(output_dic, parameters_path, data, "sorted_SSFN_window4_CIFAR10")
 
     FontSize = 18
     csfont = {'fontname':'sans-serif'}
@@ -350,8 +350,9 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
 
             # if i == 36:
             #     pass
-            if np.mean(X_train[[i],:], axis=1 ) <= 0.995:
-                train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = SSFN( X_tr, X_ts, T_train, T_test, SSFN_hparameters)
+            # if np.mean(X_train[[i],:], axis=1 ) <= 0.995:
+            if 1 < 2:
+                train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = SSFN( X_train, X_test, T_train, T_test, SSFN_hparameters)
                 # train_nme, test_nme, train_mse, test_mse = MLP( X_tr, X_ts, T_train, T_test, data)
             else:
                 train_nme, test_nme, train_mse, test_mse, train_acc, test_acc = 10**10, 10**10, 10**10, 10**10, 10**10, 10**10
@@ -810,11 +811,11 @@ def main():
 def NMP_train(_logger, X_train, X_test, T_train, T_test, args):
     # args = define_parser()
 
-    # sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat_window(X_train, X_test, T_train, T_test, args)
+    sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat_window(X_train, X_test, T_train, T_test, args)
     # sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat(X_train, X_test, T_train, T_test, args)
     # acc_vs_J(_logger,args)
     # acc_vs_P(_logger,args)
-    plot_MNIST(_logger,args)
+    # plot_MNIST(_logger,args)
     # my_plot(_logger,args)
 
     return sorted_ind, train_NME, test_NME, train_mse, test_mse 
