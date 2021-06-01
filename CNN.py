@@ -45,7 +45,7 @@ def my_CNN( X_tr, X_ts, T_train, T_test):
     epochs = 10
 
     model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
-    model.fit(X_tr, tf.transpose(T_train), epochs=epochs, batch_size=batch_size, verbose=0)
+    model.fit(X_tr, tf.transpose(T_train), epochs=epochs, batch_size=batch_size, verbose=1)
 
     t_hat = model.predict(X_tr).T
     t_hat_test = model.predict(X_ts).T
