@@ -10,6 +10,9 @@ from sklearn.pipeline import make_pipeline
 import random
 import pandas as pd
 from MyFunctions import *
+from load_dataset import *
+from CNN import my_CNN
+
 
 def show_image_accuracy_cifar(samples, sorted_ind, save_name, test_accuracy):
     result_path = "./results/"
@@ -92,3 +95,8 @@ S_hat = choose_patched_features(26, rows, cols, patch_rows = 4, patch_cols = 4)
 
 test_accuracy = [29.64, 33.99, 40,  41.49, 50.45]
 show_image_accuracy_cifar(x, S_hat[0:300], "test_nmp_cnn_300_4x4", test_accuracy)
+
+'''
+X_train, X_test, T_train, T_test = prepare_cifar10()
+my_CNN(X_train, X_test, T_train, T_test)
+'''
