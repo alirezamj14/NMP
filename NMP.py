@@ -215,8 +215,8 @@ def Err_vs_feat_window(X_train, X_test, T_train, T_test, args):
 
         print("rows: "+str(sorted_ind_row))
         print("cols: "+str(sorted_ind_col))
-        print("Test NME:" + str(test_nme_sorted))
-        print("Test ACC:" + str(test_acc_sorted))
+        print("Train ACC: " + str(train_acc_sorted))
+        print("Test ACC: " + str(test_acc_sorted))
 
         if len(test_nme_sorted) >= 0.4 * R_num * C_num:
             break
