@@ -10,10 +10,11 @@ from MyFunctions import *
 from load_dataset import *
 import multiprocessing
 from joblib import Parallel, delayed
+import matplotlib.pyplot as plt 
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run progressive learning")
-    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="CIFAR10", help="Input dataset available as the paper shows")
     parser.add_argument("--lam", type=float, default=10**(2), help="Reguralized parameters on the least-square problem")
     parser.add_argument("--mu", type=float, default=10**(3), help="Parameter for ADMM")
     parser.add_argument("--kMax", type=int, default=100, help="Iteration number of ADMM")
@@ -50,6 +51,10 @@ def define_dataset(args):
         X_train, X_test, T_train,  T_test  = prepare_Boston()
     elif args.data == "Airfoil":
         X_train, X_test, T_train,  T_test  = prepare_Airfoil()
+    elif args.data == "CIFAR10":
+        X_train, X_test, T_train,  T_test  = prepare_cifar10()
+    elif args.data == "Modelnet10":
+        X_train, X_test, T_train,  T_test  = prepare_Modelnet10()
     return X_train, X_test, T_train, T_test
 
 def parallel_Acc_vs_J(_logger, J, args):
@@ -118,14 +123,15 @@ def main():
     X_train, X_test, T_train, T_test = define_dataset(args)
     # _logger.info("The dataset we use is {}".format(args.data))
 
-
+    
+    
     S = [0, 1] # 5, 6, 7, 8, 9, 10, 11, 12] # set of true relevant features
     sweep_eta = 0.01 * np.arange(1,11)
-    sweep_J = np.arange(60000, 60050, 50)
+    sweep_J = np.arange(1000, 1050, 50)
 
     MC_Num = 1
     args.MC_Num = MC_Num
-    datasets = ["MNIST"]
+    datasets = ["CIFAR10"]
 
     for data in datasets:
         args.data = data
@@ -184,7 +190,7 @@ def main():
                 # plt.xticks(fontsize=FontSize)
                 # plt.yticks(fontsize=FontSize)
                 # plt.tight_layout()
-                # plt.savefig(result_path +"MNIST_sum"+".png",dpi=600)
+                # plt.savefig(result_path + data +"_sum_grey"+".png",dpi=600)
                 # plt.close()
 
                 J_train = np.random.choice(X_train.shape[1], int(round(J)), replace=False)

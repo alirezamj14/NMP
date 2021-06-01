@@ -26,12 +26,14 @@ class CNNModel:
 
 def my_CNN( X_tr, X_ts, T_train, T_test):
     num_classes = 10
-    input_shape = (28, 28, 1)
+    # input_shape = (28, 28, 1)
+    rows, cols, depth = (32, 32, 1)
+    input_shape = (rows, cols, 1)
 
     X_tr = X_tr.T
     X_ts = X_ts.T
-    X_tr = X_tr.reshape(X_tr.shape[0], 28, 28)
-    X_ts = X_ts.reshape(X_ts.shape[0], 28, 28)
+    X_tr = X_tr.reshape(X_tr.shape[0], rows, cols)
+    X_ts = X_ts.reshape(X_ts.shape[0], rows, cols)
 
     X_tr = np.expand_dims(X_tr, -1)
     X_ts = np.expand_dims(X_ts, -1)

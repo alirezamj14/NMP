@@ -3,6 +3,8 @@
 import numpy as np
 from MyFunctions import relu
 from scipy.io import loadmat
+import matplotlib.pyplot as plt 
+import cv2 
 
 def prepare_artificial():
     # Articial model from paper http://proceedings.mlr.press/v80/ye18b.html
@@ -99,7 +101,23 @@ def prepare_cifar10():
     X_train =  cifar10["train_x"].astype(np.float32)
     X_test =  cifar10["test_x"].astype(np.float32)
     T_train =  cifar10["train_y"].astype(np.float32)
-    T_test=  cifar10["test_y"].astype(np.float32)
+    T_test =  cifar10["test_y"].astype(np.float32)
+
+    X_train_rgb = np.reshape(X_train.T, (50000, 3, 32, 32))
+    X_test_rgb = np.reshape(X_test.T, (10000, 3, 32, 32))
+    X_train_rgb = np.swapaxes(X_train_rgb, 1,3)
+    X_test_rgb = np.swapaxes(X_test_rgb, 1,3)
+    
+    X_train_grey = np.zeros((50000,32,32))
+    X_test_grey = np.zeros((10000,32,32))
+    for i in np.arange(X_train_rgb.shape[0]):
+        X_train_grey[i,:,:] = cv2.cvtColor(X_train_rgb[i,:,:,:], cv2.COLOR_BGR2GRAY)
+    for i in np.arange(X_test_rgb.shape[0]):
+        X_test_grey[i,:,:] = cv2.cvtColor(X_test_rgb[i,:,:,:], cv2.COLOR_BGR2GRAY)
+
+    X_train = np.reshape(X_train_grey, (50000, 1024)).T
+    X_test = np.reshape(X_test_grey, (10000, 1024)).T
+
     return X_train, X_test, T_train, T_test
 
 
