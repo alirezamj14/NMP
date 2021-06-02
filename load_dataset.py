@@ -107,6 +107,8 @@ def prepare_cifar10():
     X_test_rgb = np.reshape(X_test.T, (10000, 3, 32, 32))
     X_train_rgb = np.swapaxes(X_train_rgb, 1,3)
     X_test_rgb = np.swapaxes(X_test_rgb, 1,3)
+    X_train_rgb = np.swapaxes(X_train_rgb, 1,2)
+    X_test_rgb = np.swapaxes(X_test_rgb, 1,2)
     
     X_train_grey = np.zeros((50000,32,32))
     X_test_grey = np.zeros((10000,32,32))

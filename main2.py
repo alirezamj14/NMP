@@ -190,7 +190,7 @@ def main():
                 # plt.xticks(fontsize=FontSize)
                 # plt.yticks(fontsize=FontSize)
                 # plt.tight_layout()
-                # plt.savefig(result_path + data +"_sum_grey"+".png",dpi=600)
+                # plt.savefig(result_path + data +"_sum_grey_new"+".png",dpi=600)
                 # plt.close()
 
                 J_train = np.random.choice(X_train.shape[1], int(round(J)), replace=False)
