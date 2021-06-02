@@ -29,12 +29,12 @@ class PointNet:
         self.num_classes = num_classes
         self.input_shape = input_shape
 
-    def conv_bn(x, filters):
+    def conv_bn(self, x, filters):
         x = layers.Conv1D(filters, kernel_size=1, padding="valid")(x)
         x = layers.BatchNormalization(momentum=0.0)(x)
         return layers.Activation("relu")(x)
 
-    def dense_bn(x, filters):
+    def dense_bn(self, x, filters):
         x = layers.Dense(filters)(x)
         x = layers.BatchNormalization(momentum=0.0)(x)
         return layers.Activation("relu")(x)
@@ -87,7 +87,7 @@ class PointNet:
         model.summary()
         return model
 
-    def run_cnn_inference(self, X_train, T_train, X_test, T_test):
+    def run_pointnet_inference(self, X_train, T_train, X_test, T_test):
         """
             X_train ([float]): [The matrix of training data. Each row contains one sample.]
             X_test ([float]): [The matrix of testing data. Each row contains one sample.]
@@ -95,15 +95,21 @@ class PointNet:
             T_test ([float]): [The matrix of testing target. Each row contains one sample.]
         """
         # Make sure images have shape (28, 28, 1)
-        X_train = X_train.reshape(X_train.shape[0], 28, 28)
-        X_test = X_test.reshape(X_test.shape[0], 28, 28)
-        X_train = np.expand_dims(X_train, -1)
-        X_test = np.expand_dims(X_test, -1)
+        #X_train = X_train.reshape(X_train.shape[0], 2048, 3)
+        #X_test = X_test.reshape(X_test.shape[0], 2048, 3)
+        #T_train = np.expand_dims(T_train, -1)
+        #T_test = np.expand_dims(T_test, -1)
         
         model = self.create_pointnet_model()
         model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
-        model.fit(X_train, T_train, epochs=10, batch_size=128)
+        X_train = np.expand_dims(np.array(X_train), 2)
+        train_dataset = tf.data.Dataset.from_tensor_slices((X_train, T_train))
+        
+        #train_dataset.shuffle(len(X_train)).batch(32)
+
+        model.fit(train_dataset, epochs=10)
         # Sanity checks
+        '''
         score_train = model.evaluate(X_train, T_train, verbose=0)
         score_test = model.evaluate(X_test, T_test, verbose=0)
         print("Test loss:", score_test[0])
@@ -111,6 +117,7 @@ class PointNet:
         t_hat_test = model.predict(X_test).reshape(T_test.shape)
         t_hat = model.predict(X_train).reshape(T_train.shape)
         return compute_nme(T_train,t_hat), compute_nme(T_test,t_hat_test),calculate_accuracy(T_train.T,t_hat.T), calculate_accuracy(T_test.T,t_hat_test.T)
+        '''
 
 def parse_dataset(num_points=2048):
 
@@ -243,42 +250,60 @@ def draw_points(ax, points):
     ax.set_zlim(-50, 50)
     ax.scatter(points[:, 0], points[:, 1], points[:, 2])
 
-def visualize_window_movement(points, search_range=20, radius=5):
-    
-    fig = plt.figure(figsize=(10, 10))
+def visualize_window_movement(fig, data, radius, positions):
     ax = fig.add_subplot(111, projection="3d")
-    draw_points(ax, points)
-    # Example of first 100 points chosen
-    # ax.scatter(points[1:100, 0], points[1:100, 1], points[1:100, 2])
-    
-    
-    ############################################
-    data = copy.deepcopy(points)
+    draw_points(ax, data)
+    sizes = [(radius, radius, radius)]
+    colors = ["crimson"]
+    pc = plotCubeAt(positions, sizes, colors=colors, edgecolor="k",  alpha=0.1)
+    ax.add_collection3d(pc)  
+    plt.ion() # turn on interactive mode
+    plt.show()
+    plt.pause(0.1)
+    plt.clf()
+    ax = fig.add_subplot(111, projection="3d")
+
+def train(samples, T_train, X_test, T_test, search_range=20, radius=10, min_points=8, debug=False):
+    fig = plt.figure(figsize=(10, 10))
+    count = 0 
+    ########################################################################################
     for k in range(-search_range, search_range, radius):
         for i in range(-search_range, search_range, radius):
             for j in range(-search_range, search_range, radius):
+                train_data_all_filtered = []
+                no_of_useful_samples = 0
+                for n in range(samples.shape[0]):
+                    sample = samples[n,...]
+                    data = copy.deepcopy(sample)
+                    train_data = copy.deepcopy(sample)
+                    positions = [(i,j,k)]
+
+                    if debug:
+                        visualize_window_movement(fig, sample, radius, positions)
+
+                    data[:,0] = np.logical_and(data[:,0] > i, data[:,0] <= i+radius)
+                    data[:,1] = np.logical_and(data[:,1] > j, data[:,1] <= j+radius)
+                    data[:,2] = np.logical_and(data[:,2] > k, data[:,2] <= k+radius)
+
+                    indx = (np.sum(data, axis=1) == 3)
+                    filter_matrix = np.tile(indx, (3,1)).T
+                    train_data_filtered = train_data*filter_matrix
+                    train_data_all_filtered.append(train_data_filtered)
+
+                    if len(train_data[indx,:])>min_points:
+                        no_of_useful_samples += 1
+                        if debug:
+                            print("*******We got ", len(sample[indx,:]), " points in the window")
                 
-                positions = [(i,j,k)]
-                sizes = [(radius, radius, radius)]
-                colors = ["crimson"]
-                pc = plotCubeAt(positions, sizes, colors=colors, edgecolor="k",  alpha=0.1)
-                ax.add_collection3d(pc)  
+                if no_of_useful_samples >= samples.shape[0]/10:
+                    count += 1
+                    # Here we do training if all samples in the selected window have at least the minimum points in 1/10 of the samples
+                    print("For this position (", i, j, k, ")....We are doing training!")
+                    #model = PointNet()
+                    #model.run_pointnet_inference(train_data_all_filtered, T_train, X_test, T_test)
 
-                plt.ion() # turn on interactive mode
-                plt.show()
-
-                data[:,0] = np.logical_and(data[:,0] > i, data[:,0] <= i+radius)
-                data[:,1] = np.logical_and(data[:,1] > j, data[:,1] <= j+radius)
-                data[:,2] = np.logical_and(data[:,2] > k, data[:,2] <= k+radius)
-
-                indx = (np.sum(data, axis=1) == 3)
-                
-                if len(points[indx,:])>0:
-                    print("*******We got ", len(points[indx,:]), " points in the window")
-                plt.pause(0.1)
-                data = copy.deepcopy(points)
-    ############################################
-
+    ########################################################################################
+    print ("Total positions to train for NGP = ", count)
     #ax.set_axis_off()
 
 def pc_rescale(pc, scaling_factor=40):
@@ -287,9 +312,19 @@ def pc_rescale(pc, scaling_factor=40):
     pc[:,2] = scaling_factor*(pc[:,2] - 0)/(max(pc[:,2]) - min(pc[:,2]))
     return pc
 
+def rescale_all(data):
+    for i in range(data.shape[0]):
+        data[i,...] = pc_rescale(data[i,...])
+    return data
+
 def training_loop(X_train, T_train, X_test, T_test):    
-    data = X_train[np.random.randint(2048)]
-    visualize_window_movement(pc_rescale(data))
+    #data = X_train[np.random.randint(2048)]
+    #visualize_window_movement(pc_rescale(data))
+
+    data_all = rescale_all(X_train)
+    #train(rescale_all(X_train)[1:10,...])
+    train(rescale_all(X_train), T_train, rescale_all(X_test), T_test)
+    print(data_all.shape)
 
 def main():
     X_train, T_train, X_test, T_test = load_modelnet10_data()
