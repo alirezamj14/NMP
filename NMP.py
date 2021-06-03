@@ -46,6 +46,8 @@ def define_dataset(args):
         X_train, X_test, T_train,  T_test  = prepare_NN()
     elif args.data == "Artificial":
         X_train, X_test, T_train,  T_test  = prepare_artificial()
+    elif args.data == "CIFAR10":
+        X_train, X_test, T_train,  T_test  = prepare_cifar10()
     elif args.data == "Modelnet10":
         X_train, X_test, T_train,  T_test  = prepare_Modelnet10()
     return X_train, X_test, T_train, T_test
@@ -710,7 +712,7 @@ def plot_MNIST(_logger,args):
     ,599,217,314,256,661,341,129,203,325,544,201,487,126,664,206,517,569,666,578,438,274,534,436,362,683,200,339,574,147,156,154,472,682,409,414,293,511,685,662,530,189,123,445,306] # for threshold of 0.005 (0.995) for the whole MNIST J = 60000
 
 
-    show_image((X_train[:,1],X_train[:,20],X_train[:,30]),sorted_ind, save_name)
+    # show_image((X_train[:,1],X_train[:,20],X_train[:,30]),sorted_ind, save_name)
     # save_name = "random"
     # random_ind = np.arange(0,784)
     # np.random.shuffle(random_ind)
@@ -811,11 +813,11 @@ def main():
 def NMP_train(_logger, X_train, X_test, T_train, T_test, args):
     # args = define_parser()
 
-    sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat_window(X_train, X_test, T_train, T_test, args)
+    # sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat_window(X_train, X_test, T_train, T_test, args)
     # sorted_ind, train_NME, test_NME, train_mse, test_mse = Err_vs_feat(X_train, X_test, T_train, T_test, args)
     # acc_vs_J(_logger,args)
     # acc_vs_P(_logger,args)
-    # plot_MNIST(_logger,args)
+    plot_MNIST(_logger,args)
     # my_plot(_logger,args)
 
     return sorted_ind, train_NME, test_NME, train_mse, test_mse 

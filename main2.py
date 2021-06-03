@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 def define_parser():
     parser = argparse.ArgumentParser(description="Run progressive learning")
-    parser.add_argument("--data", default="CIFAR10", help="Input dataset available as the paper shows")
+    parser.add_argument("--data", default="MNIST", help="Input dataset available as the paper shows")
     parser.add_argument("--lam", type=float, default=10**(2), help="Reguralized parameters on the least-square problem")
     parser.add_argument("--mu", type=float, default=10**(3), help="Parameter for ADMM")
     parser.add_argument("--kMax", type=int, default=100, help="Iteration number of ADMM")
@@ -131,7 +131,7 @@ def main():
 
     MC_Num = 1
     args.MC_Num = MC_Num
-    datasets = ["CIFAR10"]
+    datasets = ["MNIST"]
 
     for data in datasets:
         args.data = data
