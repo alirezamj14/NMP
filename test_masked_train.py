@@ -10,7 +10,7 @@ from sklearn.pipeline import make_pipeline
 import random
 import pandas as pd
 from MyFunctions import *
-#from compare import *
+from compare import *
 import math
 
 def patch_filter_indices(rows=28, cols=28, radius=4, pad_width=0, stride=4):
@@ -89,12 +89,12 @@ def train_patched_data(X_train, T_train, X_test, T_test, all_idx, radius=4, stri
                     # Now train SSFN with NMP here
 
                     # CNN model example
-                    '''
+                    
                     num_classes = 10
                     input_shape = (28, 28, 1)
                     model = CNNModel(num_classes, input_shape)
                     print(model.run_cnn_inference(curr_x_train.T, T_train.T, curr_x_test.T, T_test.T))
-                    '''
+                    
                 else:
                     print("Elements sum in training patch is less than threshold....skipping training!")
     avg = np.array(data)  
