@@ -44,7 +44,7 @@ def show_image_accuracy_cifar(samples, sorted_ind, save_name, test_accuracy):
             feature_image = zero
             feature_image[:,:,0] = feature
 
-            output = (1*dummy_RGB_image + 0.8*feature_image)
+            output = (0.9*dummy_RGB_image + 0.4*feature_image)
             ax = plt.subplot(gs1[i])
 
             ax.set_aspect('equal')
@@ -71,30 +71,31 @@ def choose_patched_features(size, rows, cols, patch_rows = 4, patch_cols = 4, im
 
 # Just to compare what global features SHAP with DeepLift choose
 X_original =  loadmat("./mat_files/CIFAR-10.mat")["train_x"].astype(np.float32)
+T_original =  loadmat("./mat_files/CIFAR-10.mat")["train_y"].astype(np.float32)
 X_rgb = np.reshape(X_original.T, (50000, 3, 32, 32))
 X_rgb = np.swapaxes(X_rgb, 1,3)
 X_rgb = np.swapaxes(X_rgb, 1,2)
 
-x = np.array([X_rgb[4,...]/255,
-              X_rgb[15,...]/255,
-              X_rgb[3,...]/255,
+x = np.array([X_rgb[30,...]/255,
+              X_rgb[4,...]/255,
+              X_rgb[13,...]/255,
               X_rgb[3000,...]/255,
-              X_rgb[12321,...]/255,
-              X_rgb[4556,...]/255,
-              X_rgb[7687,...]/255,
-              X_rgb[1231,...]/255,
-              X_rgb[456,...]/255,
-              X_rgb[8687,...]/255
+              X_rgb[3,...]/255,
+              X_rgb[27,...]/255,
+              X_rgb[0,...]/255,
+              X_rgb[8687,...]/255,
+              X_rgb[69,...]/255,
+              X_rgb[7687,...]/255
               ])
 
-rows = [4, 4, 0, 4, 7, 2, 5, 2, 7, 0, 7, 7, 5, 6, 4, 1, 2, 4, 0, 2, 2, 1, 5, 3, 6, 4]
-cols = [2, 6, 7, 4, 5, 1, 6, 0, 7, 5, 1, 4, 2, 4, 1, 4, 7, 3, 4, 2, 6, 5, 7, 7, 6, 0]
+rows = [4, 7, 2, 7, 1, 0, 6, 3, 1, 4, 2, 6, 7, 2, 4, 0, 6, 6, 7, 3, 2, 3, 7, 4, 3, 5]
+cols = [2, 7, 5, 5, 2, 7, 1, 2, 0, 7, 2, 4, 4, 3, 5, 1, 7, 5, 2, 0, 7, 3, 0, 3, 7, 5]
 
 #S_hat = choose_patched_features(49, patch_rows = 4, patch_cols = 4)
 S_hat = choose_patched_features(26, rows, cols, patch_rows = 4, patch_cols = 4)
 
-test_accuracy = [29.64, 33.99, 40,  41.49, 50.45]
-show_image_accuracy_cifar(x, S_hat[0:300], "test_nmp_cnn_300_4x4", test_accuracy)
+test_accuracy = [32.85, 37.04, 35.91, 38.71, 41.95]
+show_image_accuracy_cifar(x, S_hat[0:500], "test_nmp_cnn_500_4x4", test_accuracy)
 
 '''
 X_train, X_test, T_train, T_test = prepare_cifar10()

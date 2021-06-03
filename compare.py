@@ -59,6 +59,7 @@ class CNNModel:
         X_test = np.expand_dims(X_test, -1)
         
         model = self.create_cnn_model()
+        model.summary()
         model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
         model.fit(X_train, T_train, epochs=10, batch_size=128)
         # Sanity checks
