@@ -18,7 +18,7 @@ NGP can be added to any learning algorithm with basic understanding of the algor
 
 To run NGP on different datasets please use the following command:
 ```
-
+python NGP.py --data=MNIST
 ```
 
 To compare the performance of NGP wrt to the other classical feature selection methods use the following command:
