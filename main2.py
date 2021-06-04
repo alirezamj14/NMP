@@ -129,7 +129,7 @@ def main():
     sweep_eta = 0.01 * np.arange(1,11)
     sweep_J = np.arange(1000, 1050, 50)
 
-    MC_Num = 1
+    MC_Num = 10
     args.MC_Num = MC_Num
     datasets = ["MNIST"]
 
@@ -152,6 +152,12 @@ def main():
         NMP_avg_FNME = np.array([])    
         NMP_avg_PMSE = np.array([])
         NMP_avg_FMSE = np.array([])
+        NMP_std_FPSR = np.array([])
+        NMP_std_FNSR = np.array([])    
+        NMP_std_PNME = np.array([])
+        NMP_std_FNME = np.array([])    
+        NMP_std_PMSE = np.array([])
+        NMP_std_FMSE = np.array([])
         NMP_accuracy = np.array([]) 
 
         for J in sweep_J:
@@ -196,7 +202,7 @@ def main():
                 J_train = np.random.choice(X_train.shape[1], int(round(J)), replace=False)
                 J_test = np.random.choice(X_test.shape[1], int(round(0.1*J)), replace=False)
                 args.flag = "Not_given"
-                S_hat, train_NME, test_NME, train_mse, test_mse  = NMP_train(_logger, X_train[:,:], X_test[:,:], T_train[:,:], T_test[:,:], args)       # set of selected features
+                S_hat, train_NME, test_NME, train_mse, test_mse  = NMP_train(_logger, X_train[:,J_train], X_test[:,J_test], T_train[:,J_train], T_test[:,J_test], args)       # set of selected features
                 # S_hat, train_NME, test_NME, train_mse, test_mse  = NMP_train(_logger, X_train, X_test, T_train, T_test, args)       # set of selected features
                 # args.flag = "given_order"
                 # args.best_ind = np.flip(S_hat)
@@ -206,12 +212,12 @@ def main():
                 # print(S_hat)
                 # print(S_hat_given)
 
-                # NMP_FPSR[0,i] = FPSR(args.S,S_hat)
-                # NMP_FNSR[0,i] = FNSR(args.S,S_hat)
-                # NMP_PNME[0,i] = test_NME[-1]
-                # NMP_FNME[0,i] = train_NME
-                # NMP_PMSE[0,i] = test_mse
-                # NMP_FMSE[0,i] = train_mse
+                NMP_FPSR[0,i] = FPSR(args.S,S_hat)
+                NMP_FNSR[0,i] = FNSR(args.S,S_hat)
+                NMP_PNME[0,i] = test_NME[-1]
+                NMP_FNME[0,i] = train_NME
+                NMP_PMSE[0,i] = test_mse
+                NMP_FMSE[0,i] = train_mse
 
                 # NMP_NME_matrix[:,i] = test_NME
                 # NMP_NME_matrix_given[:,i] = test_NME_given
@@ -235,12 +241,19 @@ def main():
             # accuracy = (1 - miss_count/MC_Num) * 100         
             # NMP_accuracy = np.append(NMP_accuracy, accuracy)
             
-            # NMP_avg_FPSR = np.append(NMP_avg_FPSR, np.mean(NMP_FPSR))
-            # NMP_avg_FNSR = np.append(NMP_avg_FNSR, np.mean(NMP_FNSR))
-            # NMP_avg_PNME = np.append(NMP_avg_PNME, np.mean(NMP_PNME))
-            # NMP_avg_FNME = np.append(NMP_avg_FNME, np.mean(NMP_FNME))
-            # NMP_avg_PMSE = np.append(NMP_avg_PMSE, np.mean(NMP_PMSE))
-            # NMP_avg_FMSE = np.append(NMP_avg_FMSE, np.mean(NMP_FMSE))
+            NMP_avg_FPSR = np.append(NMP_avg_FPSR, np.mean(NMP_FPSR))
+            NMP_avg_FNSR = np.append(NMP_avg_FNSR, np.mean(NMP_FNSR))
+            NMP_avg_PNME = np.append(NMP_avg_PNME, np.mean(NMP_PNME))
+            NMP_avg_FNME = np.append(NMP_avg_FNME, np.mean(NMP_FNME))
+            NMP_avg_PMSE = np.append(NMP_avg_PMSE, np.mean(NMP_PMSE))
+            NMP_avg_FMSE = np.append(NMP_avg_FMSE, np.mean(NMP_FMSE))
+
+            NMP_std_FPSR = np.append(NMP_std_FPSR, np.std(NMP_FPSR))
+            NMP_std_FNSR = np.append(NMP_std_FNSR, np.std(NMP_FNSR))
+            NMP_std_PNME = np.append(NMP_std_PNME, np.std(NMP_PNME))
+            NMP_std_FNME = np.append(NMP_std_FNME, np.std(NMP_FNME))
+            NMP_std_PMSE = np.append(NMP_std_PMSE, np.std(NMP_PMSE))
+            NMP_std_FMSE = np.append(NMP_std_FMSE, np.std(NMP_FMSE))
 
             # NMP_NME_avg = np.mean(NMP_NME_matrix, axis = 1)
             # NMP_NME_avg_given = np.mean(NMP_NME_matrix_given, axis = 1)
@@ -258,12 +271,12 @@ def main():
         #########################################################################################################################
         #########################################################################################################################   
 
-        # print("Average FPSR of NMP: " + str(NMP_avg_FPSR))
-        # print("Average FNSR of NMP: " + str(NMP_avg_FNSR))
-        # print("Average PNME of NMP: " + str(NMP_avg_PNME))
-        # print("Average FNME of NMP: " + str(NMP_avg_FNME))
-        # print("Average PMSE of NMP: " + str(NMP_avg_PMSE))
-        # print("Average FMSE of NMP: " + str(NMP_avg_FMSE))
+        print("Average FPSR of NMP: " + str(NMP_avg_FPSR) + " - " + str(NMP_std_FPSR))
+        print("Average FNSR of NMP: " + str(NMP_avg_FNSR) + " - " + str(NMP_std_FNSR))
+        print("Average PNME of NMP: " + str(NMP_avg_PNME) + " - " + str(NMP_std_PNME))
+        print("Average FNME of NMP: " + str(NMP_avg_FNME) + " - " + str(NMP_std_FNME))
+        print("Average PMSE of NMP: " + str(NMP_avg_PMSE) + " - " + str(NMP_std_PMSE))
+        print("Average FMSE of NMP: " + str(NMP_avg_FMSE) + " - " + str(NMP_std_FMSE))
 
         # print("Average dACC of NMP: " + str(NMP_accuracy))
 

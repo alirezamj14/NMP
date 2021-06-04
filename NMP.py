@@ -379,14 +379,14 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
             # i = np.where(search_ind == best_ind_reversed[k])
             # i = np.where(search_ind == best_ind_random[k])
             
-        if len(test_nme_sorted) >= 0.4*784:
-            break
-            if len(sorted_ind) == len(args.S):
-                break
+        if len(test_nme_sorted) >= 1: #0.4*784:
+            # break
+            # if len(sorted_ind) == len(args.S):
+                # break
             if np.abs(test_nme_array[i] - test_nme_sorted[-1])/np.abs(test_nme_sorted[-1]) < eta or np.abs(test_nme_array[i]) <= np.abs(test_nme_sorted[-1]):
             # if np.abs(test_nme_array[i] - test_nme_sorted[-1])/np.abs(test_nme_sorted[-1]) > eta and np.abs(test_nme_array[i]) <= np.abs(test_nme_sorted[-1]):
-                # break
-                pass
+                break
+                # pass
 
         best_ind = search_ind[i]
         train_acc_sorted = np.append(train_acc_sorted, train_acc_array[i])
@@ -406,7 +406,7 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
     # print("FPSR: " + str(MyFPSR))
     # MyFNSR = FNSR([0, 1, 2],sorted_ind[0:3]) 
     # print("FNSR: " + str(MyFNSR))
-    print(test_acc_sorted[-1])
+    # print(test_acc_sorted[-1])
 
     output_dic = {}
     output_dic["sorted_ind"]=sorted_ind 
@@ -416,7 +416,7 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
     output_dic["train_nme_sorted"]=train_nme_sorted 
     output_dic["test_mse_sorted"]=test_mse_sorted 
     output_dic["train_mse_sorted"]=train_mse_sorted 
-    save_dic(output_dic, parameters_path, data, "sorted_threshold_0995")
+    # save_dic(output_dic, parameters_path, data, "sorted_threshold_0995")
 
     FontSize = 18
     csfont = {'fontname':'sans-serif'}
@@ -434,21 +434,21 @@ def Err_vs_feat(X_train, X_test, T_train, T_test, args):
     plt.savefig(result_path +"Err_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+"_SSFN.png",dpi=600)
     plt.close()
 
-    # if data=="MNIST":
-    csfont = {'fontname':'sans-serif'}
-    plt.subplots()
-    plt.plot(np.arange(1,len(test_acc_sorted)+1), test_acc_sorted, 'r-', label="Test Accuracy", linewidth=2)
-    plt.plot(np.arange(1,len(train_acc_sorted)+1), train_acc_sorted, 'b-', label="Train Accuracy", linewidth=2)
-    plt.legend(loc='best')
-    plt.grid()
-    plt.xlabel("Number of input features",fontdict=csfont, fontsize=FontSize)
-    plt.ylabel("Classification accuracy (%)",fontdict=csfont, fontsize=FontSize)
-    # plt.title(data+", SSFN", loc='center')
-    plt.xticks(fontsize=FontSize)
-    plt.yticks(fontsize=FontSize)
-    plt.tight_layout()
-    plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
-    plt.close()
+    # # if data=="MNIST":
+    # csfont = {'fontname':'sans-serif'}
+    # plt.subplots()
+    # plt.plot(np.arange(1,len(test_acc_sorted)+1), test_acc_sorted, 'r-', label="Test Accuracy", linewidth=2)
+    # plt.plot(np.arange(1,len(train_acc_sorted)+1), train_acc_sorted, 'b-', label="Train Accuracy", linewidth=2)
+    # plt.legend(loc='best')
+    # plt.grid()
+    # plt.xlabel("Number of input features",fontdict=csfont, fontsize=FontSize)
+    # plt.ylabel("Classification accuracy (%)",fontdict=csfont, fontsize=FontSize)
+    # # plt.title(data+", SSFN", loc='center')
+    # plt.xticks(fontsize=FontSize)
+    # plt.yticks(fontsize=FontSize)
+    # plt.tight_layout()
+    # plt.savefig(result_path +"Acc_vs_index_J"+str(J)+"_L"+str(LayerNum)+"_node"+str(NodeNum)+"_"+data+".png",dpi=600)
+    # plt.close()
 
     return sorted_ind, train_nme_sorted[-1], test_nme_sorted, train_mse_sorted[-1], test_mse_sorted[-1]
 
@@ -678,7 +678,7 @@ def plot_MNIST(_logger,args):
     LayerNum = SSFN_hparameters["LayerNum"]
     NodeNum = SSFN_hparameters["NodeNum"]
     
-    save_name = "sorted_threshold_0995_J_60000"
+    save_name = "sorted_threshold_0995_J100"
     my_dic = load_dic( parameters_path, data, save_name)
     print("Read sorted indices")
     # sorted_ind = [195,404,408,272,239,322,296,489,400,341,290,299,464,485,398,570,379,377,596,745,250,214,471,368,447,620,325,109,754,673,92,636,357,383,348,514,566,211,657,511,655,634,352,445,672,306,392,263,430,237,267,327,597,433
@@ -704,13 +704,19 @@ def plot_MNIST(_logger,args):
     # ,152,41,277,126,138,739,691,247,483,743,77,447,717,689,595,735,301,121,370,606,30,230,564,639,201,441,715,21,396,212,161,662,40,508,514,39,251,253,150,728,556,179,221,781,571,233,311,51,265,15,433,712,42,294
     # ,49,601,385,83,690,504,159,135,329,66]
 
-    sorted_ind = [717,405,490,380,272,291,397,400,239,402,296,348,299,514,218,381,322,384,440,567,371,571,430,651,408,628,230,158,458,442,235,179,121,188,358,326,428,451,437,483,340,404,435,399,177,212,271,351,343,547,260,433,181,486
-    ,331,634,474,468,655,187,478,516,526,550,624,709,316,273,345,355,457,292,491,249,193,275,310,677,539,359,494,632,294,377,105,417,387,598,413,313,124,579,528,131,612,146,333,481,454,145,298,515,443,679,512,493,529,509
-    ,264,285,627,502,686,570,577,318,367,290,321,434,540,546,300,406,556,374,157,706,277,372,215,255,527,95,184,621,164,178,543,563,473,394,631,681,638,690,209,133,665,211,535,269,228,456,663,276,176,524,320,378,582,373
-    ,266,388,328,469,349,311,552,553,460,499,237,247,422,411,155,361,470,537,240,370,453,484,441,175,286,620,262,312,232,160,707,375,593,128,163,410,554,354,219,500,633,161,342,495,245,415,429,244,423,357,323,604,510,265
-    ,607,385,352,508,545,692,425,159,248,270,648,536,125,284,261,382,622,492,338,459,134,718,122,376,288,596,656,317,565,283,479,658,680,174,584,485,132,305,623,229,609,688,278,542,149,103,401,398,221,657,431,600,210,519
-    ,599,217,314,256,661,341,129,203,325,544,201,487,126,664,206,517,569,666,578,438,274,534,436,362,683,200,339,574,147,156,154,472,682,409,414,293,511,685,662,530,189,123,445,306] # for threshold of 0.005 (0.995) for the whole MNIST J = 60000
+    # sorted_ind = [717,405,490,380,272,291,397,400,239,402,296,348,299,514,218,381,322,384,440,567,371,571,430,651,408,628,230,158,458,442,235,179,121,188,358,326,428,451,437,483,340,404,435,399,177,212,271,351,343,547,260,433,181,486
+    # ,331,634,474,468,655,187,478,516,526,550,624,709,316,273,345,355,457,292,491,249,193,275,310,677,539,359,494,632,294,377,105,417,387,598,413,313,124,579,528,131,612,146,333,481,454,145,298,515,443,679,512,493,529,509
+    # ,264,285,627,502,686,570,577,318,367,290,321,434,540,546,300,406,556,374,157,706,277,372,215,255,527,95,184,621,164,178,543,563,473,394,631,681,638,690,209,133,665,211,535,269,228,456,663,276,176,524,320,378,582,373
+    # ,266,388,328,469,349,311,552,553,460,499,237,247,422,411,155,361,470,537,240,370,453,484,441,175,286,620,262,312,232,160,707,375,593,128,163,410,554,354,219,500,633,161,342,495,245,415,429,244,423,357,323,604,510,265
+    # ,607,385,352,508,545,692,425,159,248,270,648,536,125,284,261,382,622,492,338,459,134,718,122,376,288,596,656,317,565,283,479,658,680,174,584,485,132,305,623,229,609,688,278,542,149,103,401,398,221,657,431,600,210,519
+    # ,599,217,314,256,661,341,129,203,325,544,201,487,126,664,206,517,569,666,578,438,274,534,436,362,683,200,339,574,147,156,154,472,682,409,414,293,511,685,662,530,189,123,445,306] # for threshold of 0.005 (0.995) for the whole MNIST J = 60000
 
+    # sorted_ind = [152,151,491,201,274,159,662,178,297,401,136,632,211,471,188,185,470,275 ,127,270,269,629,293,573,386,599,157,623,542,438,429,190,361,387,598,404 ,605,239,160,663,483,424,586,443,210,302,164,592,437,529,625,156,236,235
+    # ,458,541,495,535,328,315,680,514,395,636,602,230,262,658,423,102,591,688 ,383,202,426,329,548,430,285,238,304,294,367,240,630,177,685,145,310,192 ,128,146,355,648,539,540,148,155,422,522,93,209,385,494,331,425,654,579
+    # ,215,450,653,555,162,316,563,631,607,179,508,451,683,677,460,153,237,207 ,490,571,205,203,150,260,693,258,465,298,122,359,567,461,432,384,187,580 ,594,518,356,104,538,553,133,324,218,569,92,322,398,512,287,620,131,707
+    # ,499,377,380,406,595,191,267,163,273,455,503,357,323,547,204,496,264,132 ,479,462,320,621,436,506,256,649,484,640,286,394,585,417,509,596,389,581 ,513,101,212,528,266,353,660,301,219,482,577,234,457,321,537,369,634,692
+    # ,593,481,339,549,154,344,613,119,498,200,303,582,332,263,516,668,597,149 ,259,342,502,415,206,552,543,123,257,245,431,407,570,333,610,500,666,650 ,338,600,397,265,129,284,362,635,572,183,379,347,584,690,527,184,94,390
+    # ,412,319,313,180,413,444,125,492,497,248,399,306,314,370,345,604,652,299 ,456,554,276,454,485,300,325,289,172,341,343,445,216,186,354,268,358,351 ,360,464,418,371,565,520,434,626] # for threshold of 0.005 (0.995) for the whole MNIST J = 100
 
     # show_image((X_train[:,1],X_train[:,20],X_train[:,30]),sorted_ind, save_name)
     # save_name = "random"
@@ -728,6 +734,9 @@ def plot_MNIST(_logger,args):
     test_nme_sorted = my_dic["test_nme_sorted"]
     test_acc_sorted = my_dic["test_acc_sorted"]
     train_acc_sorted = my_dic["train_acc_sorted"]
+
+    sorted_ind = my_dic["sorted_ind"]
+    print(sorted_ind)
 
     print("F-MSE: "+str(train_mse_sorted[-1]))
     print("F-NME: "+str(train_nme_sorted[-1]))

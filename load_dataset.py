@@ -23,11 +23,11 @@ def prepare_artificial():
 
     T_train = (10 * np.sin(np.maximum(X_train[0,:], X_train[1,:])) + (np.maximum(np.maximum(X_train[2,:], X_train[3,:]), X_train[4,:]))**3 )/( 1 + (X_train[0,:] + X_train[4,:])**2 ) \
             + np.sin(0.5 * X_train[2,:]) * (1 + np.exp(X_train[3,:] - 0.5 * X_train[2,:])) \
-            + X_train[2,:]**2 + 2 * np.sin(X_train[3,:]) + 2 * X_train[4,:] + epsilon * 0
+            + X_train[2,:]**2 + 2 * np.sin(X_train[3,:]) + 2 * X_train[4,:] + epsilon * 1
  
     T_test = (10 * np.sin(np.maximum(X_test[0,:], X_test[1,:])) + (np.maximum(np.maximum(X_test[2,:], X_test[3,:]), X_test[4,:]))**3 )/( 1 + (X_test[0,:] + X_test[4,:])**2 ) \
             + np.sin(0.5 * X_test[2,:]) * (1 + np.exp(X_test[3,:] - 0.5 * X_test[2,:])) \
-            + X_test[2,:]**2 + 2 * np.sin(X_test[3,:]) + 2 * X_test[4,:] + epsilon * 0
+            + X_test[2,:]**2 + 2 * np.sin(X_test[3,:]) + 2 * X_test[4,:] + epsilon * 1
     
     return X_train, X_test, T_train, T_test
 

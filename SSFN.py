@@ -60,7 +60,7 @@ def SSFN(X_train, X_test, T_train, T_test, SSFN_hparameters):
 
         Zi_part1=np.dot(VQ, t_hat)
         Zi_part2=np.dot(Ri,Yi)
-        # Zi_part2 = Zi_part2 / np.linalg.norm(Zi_part2, axis=0)
+        Zi_part2 = Zi_part2 / np.linalg.norm(Zi_part2, axis=0)
         Zi=np.concatenate([Zi_part1, Zi_part2], axis=0)
         Yi_temp=activation(Zi)
         
@@ -71,7 +71,7 @@ def SSFN(X_train, X_test, T_train, T_test, SSFN_hparameters):
         #  Following the same procedure for test data
         Zi_part1_test = np.dot(VQ, t_hat_test)
         Zi_part2_test = np.dot(Ri,Yi_test)
-        # Zi_part2_test = Zi_part2_test / np.linalg.norm(Zi_part2_test, axis=0)
+        Zi_part2_test = Zi_part2_test / np.linalg.norm(Zi_part2_test, axis=0)
         Zi_test=np.concatenate([Zi_part1_test, Zi_part2_test], axis=0)
         Yi_test_temp=activation(Zi_test)
         t_hat_test=np.dot(Oi,Yi_test_temp)
